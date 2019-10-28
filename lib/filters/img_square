@@ -1,0 +1,8 @@
+#!/bin/bash
+read h < <(identify -format '%h' "$1")
+read w < <(identify -format '%w' "$1")
+if [[ $h -eq $w ]]; then
+    exit 0
+else
+    exit 1
+fi

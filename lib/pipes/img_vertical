@@ -1,0 +1,10 @@
+#!/bin/bash
+
+while read file; do
+    read h < <(identify -format '%h' "${file}")
+    read w < <(identify -format '%w' "${file}")
+    if [[ $h -gt $w ]]
+    then
+        echo "${file}"
+    fi
+done

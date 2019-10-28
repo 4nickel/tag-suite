@@ -1,0 +1,30 @@
+[package]
+name = "xtag"
+version = "0.1.0"
+authors = ["Felix Viernickel <f.viernickel@googlemail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+xattr = "0.2.2"
+failure = "0.1.5"
+diesel = { version = "1.4.2", features = ["sqlite", "r2d2"] }
+walkdir = "2"
+lazy_static = "1.0.0"
+clap = "2.33.0"
+regex = "1"
+log = "0.4"
+env_logger = "0.7.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+serde_json = "1.0.41"
+owning_ref = "0.4.0"
+shell-escape = "0.1.4"
+md5 = "0.6.1"
+internship = "0.6.0"
+chrono = "0.4.9"
+
+[profile.release]
+debug = false
+lto = true

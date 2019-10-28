@@ -1,0 +1,6 @@
+/target
+**/*.rs.bk
+/var
+tdb
+tag
+.envrc
