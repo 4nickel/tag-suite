@@ -25,6 +25,6 @@ md5 = "0.6.1"
 internship = "0.6.0"
 chrono = "0.4.9"
 
-[profile.release]
-debug = false
-lto = true
+#[profile.release]
+#debug = false
+#lto = true
