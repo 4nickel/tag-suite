@@ -124,6 +124,80 @@ where
     }
 }
 
+pub trait HasId<T>
+where
+    T: Copy + Hash + Eq
+{
+    fn as_id(&self) -> T;
+}
+
+impl<T> HasId<T> for T
+where
+    T: Copy + Hash + Eq
+{
+    fn as_id(&self) -> T { *self }
+}
+
+pub struct OneToOneFat<L, LID, R, RID>
+where
+    L: HasId<LID>,
+    R: HasId<RID>,
+    RID: Copy + Hash + Eq,
+    LID: Copy + Hash + Eq,
+{
+    itos: HashMap<LID, R>,
+    stoi: HashMap<RID, L>,
+}
+
+impl<L, LID, R, RID> OneToOneFat<L, LID, R, RID>
+where
+    L: HasId<LID>,
+    R: HasId<RID>,
+    RID: Copy + Hash + Eq,
+    LID: Copy + Hash + Eq,
+{
+    pub fn new() -> Self {
+        Self {
+            itos: HashMap::new(),
+            stoi: HashMap::new()
+        }
+    }
+    pub fn with_capacity(cap: usize) -> Self {
+        Self {
+            itos: HashMap::with_capacity(cap),
+            stoi: HashMap::with_capacity(cap)
+        }
+    }
+    /// Return an iterator over the int/str pairs
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item=(LID, RID)> + 'a {
+        self.itos.iter().map(|e| (*e.0, e.1.as_id()))
+    }
+    /// Return the number of contained items
+    pub fn len(&self) -> usize {
+        self.itos.len()
+    }
+    /// Return the str associated with an int
+    pub fn by_uid(&self, id: LID) -> Res<&R> {
+        self.itos.get(&id).ok_or(E::UnknownId { id: "".into() }.into())
+    }
+    /// Return the int associated with an str
+    pub fn by_alt(&self, id: RID) -> Res<&L> {
+        self.stoi.get(&id).ok_or(E::UnknownId { id: "".into() }.into())
+    }
+    /// Map an int to a str
+    pub fn map(&mut self, l: L, r: R) {
+        let lid = l.as_id();
+        let rid = r.as_id();
+        self.itos.insert(lid, r);
+        self.stoi.insert(rid, l);
+    }
+    /// Shrink the internal buffers to fit
+    pub fn shrink_to_fit(&mut self) {
+        self.stoi.shrink_to_fit();
+        self.itos.shrink_to_fit();
+    }
+}
+
 pub type Diffed<'d, T> = Difference<'d, T, RandomState>;
 
 /// Contains to sets of items for the purpose

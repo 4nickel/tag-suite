@@ -1,4 +1,5 @@
 use super::{import::*, api, Tag, error::{Error as E}};
+use crate::model::{file, tag};
 
 /// A file and it's associated tag data. Provides
 /// methods for opening, querying, modifying and saving
@@ -46,11 +47,13 @@ impl File {
         self.dirty
     }
 
+    pub fn ident<'a>(&'a self) -> file::Ident<'a> {
+        file::Ident { path: self.path_str(), kind: util::file::get_file_type(self.path_str()).to_i64() }
+    }
+
     /// Generate tuples mapping (file -> tag)
-    pub fn mapping<'a>(&'a self) -> Vec<(&'a str, &'a str)> {
-        self.iter().map(|t|
-            (self.path_str(), t.as_str())
-        ).collect()
+    pub fn mapping<'a>(&'a self) -> Vec<(file::Ident<'a>, tag::Ident<'a>)> {
+        self.iter().map(|t| { (self.ident(), t.ident()) }).collect()
     }
 
     /// Merge one tag into another
@@ -122,7 +125,7 @@ impl File {
     /// Link this file to the target directory
     pub fn link(&self, dst: &str) -> Res<bool> {
         use std::os::unix;
-        trace!("linking: {:?}", self.path);
+        info!("linking: {:?}", self.path);
         let link = self.link_path(dst);
         unix::fs::symlink(&self.path, link)?;
         Ok(true)
@@ -170,8 +173,10 @@ impl File {
 
     /// Format the files path and tags in a simple way for human consumption
     pub fn format(&self) -> String {
-        let s = api::format(&self.tags, TAG_SEPERATOR);
-        format!("{} {}", &self.path.to_string_lossy(), s)
+        match api::format(&self.tags, TAG_SEPERATOR) {
+            Some(s) => format!("{} {}", &self.path.to_string_lossy(), s),
+            None => format!("{}", &self.path.to_string_lossy())
+        }
     }
 }
 
@@ -179,34 +184,46 @@ impl File {
 mod suite {
     use super::*;
 
-    fn check_simple_operations(mut f: File) {
+    #[test]
+    fn check_add() {
+        let mut f = File::open("var/test/attr/a".into()).unwrap();
+        assert_eq!(f.has("foo"), false);
+        assert_eq!(f.has("bar"), false);
         assert_eq!(f.add("foo").unwrap(), true);
-        assert_eq!(f.del("foo"), true);
+        assert_eq!(f.add("bar").unwrap(), true);
+        assert_eq!(f.has("foo"), true);
+        assert_eq!(f.has("bar"), true);
+    }
+
+    #[test]
+    fn check_del() {
+        let mut f = File::open("var/test/attr/a".into()).unwrap();
         assert_eq!(f.add("foo").unwrap(), true);
         assert_eq!(f.has("foo"), true);
-        assert_eq!(f.save().unwrap(), true);
-        assert_eq!(f.add("foo").unwrap(), false);
         assert_eq!(f.del("foo"), true);
-        assert_eq!(f.save().unwrap(), true);
-        assert_eq!(f.save().unwrap(), false);
         assert_eq!(f.has("foo"), false);
     }
 
     #[test]
-    fn check_file_operations() {
-        check_simple_operations(File::open("var/test/a".into()).unwrap())
-    }
-
-    #[test]
-    fn check_directory_operations() {
-        check_simple_operations(File::open("var/test".into()).unwrap())
+    fn check_save() {
+        {
+            let mut f = File::open("var/test/attr/a".into()).unwrap();
+            assert_eq!(f.add("foo").unwrap(), true);
+            assert_eq!(f.save().unwrap(), true);
+        }
+        {
+            let mut f = File::open("var/test/attr/a".into()).unwrap();
+            assert_eq!(f.del("foo"), true);
+            assert_eq!(f.save().unwrap(), true);
+        }
     }
 
     #[test]
     fn check_api_tag() {
-        let f = File::open("test/b".into()).unwrap();
+        use super::super::import::*;
+        let f = File::open("var/test/attr/b".into()).unwrap();
         let api_tag = f.iter().next().unwrap();
-        //assert_eq!(api_tag, crate::app::attr::api::API_TAG);
+        assert_eq!(api_tag.as_str(), API_TAG);
     }
 
     #[test]

@@ -1,18 +1,20 @@
 use super::import::*;
 use crate::{app::attr::{File as Attributes}, util::collections};
+use crate::{model::{file, tag}};
 
-pub type DiffedFileTags<'d> = collections::Diffed<'d, (&'d str, &'d str)>;
-pub type DiffedStrIds<'d> = collections::Diffed<'d, &'d str>;
+pub type DiffedFiles<'d> = collections::Diffed<'d, file::Ident<'d>>;
+pub type DiffedTags<'d> = collections::Diffed<'d, tag::Ident<'d>>;
+pub type DiffedFileTags<'d> = collections::Diffed<'d, (file::Ident<'d>, tag::Ident<'d>)>;
 
 /// Sets of found tags/attrs in the
-/// attrsystem and database. Used to
+/// filesystem and database. Used to
 /// generate 'diffs', which we then
 /// use to create the insert and delete
 /// statements.
 pub struct Diff<'u> {
-    files: collections::Diff<&'u str>,
-    tags: collections::Diff<&'u str>,
-    filetags: collections::Diff<(&'u str, &'u str)>,
+    files: collections::Diff<file::Ident<'u>>,
+    tags: collections::Diff<tag::Ident<'u>>,
+    filetags: collections::Diff<(file::Ident<'u>, tag::Ident<'u>)>,
 }
 
 impl<'u> Diff<'u> {
@@ -36,10 +38,10 @@ impl<'u> Diff<'u> {
         attr.iter().for_each(|f| {
             this.add_tagfile(f);
         });
-        cols.map.iter().try_for_each(|(fid, tid)| -> Res<()> {
-            let f = maps.fids().by_uid(*fid)?;
-            let t = maps.tids().by_uid(*tid)?;
-            this.add_filetag(f, t);
+        cols.filetag_iter().try_for_each(|(fid, tid)| -> Res<()> {
+            let f = maps.fids().by_uid(fid)?;
+            let t = maps.tids().by_uid(tid)?;
+            this.add_filetag(f.ident(), t.ident());
             Ok(())
         })?;
         this.shrink_to_fit();
@@ -47,26 +49,26 @@ impl<'u> Diff<'u> {
     }
 
     /// Add a filetag found in the database to the Diff
-    pub fn add_filetag(&mut self, file: &'u str, tag: &'u str) {
-        self.filetags.ls().insert((file, tag));
+    pub fn add_filetag(&mut self, file: file::Ident<'u>, tag: tag::Ident<'u>) {
         self.files.ls().insert(file);
         self.tags.ls().insert(tag);
+        self.filetags.ls().insert((file, tag));
     }
 
     /// Add a tagfile found in the filesystem to the Diff
     pub fn add_tagfile(&mut self, file: &'u Attributes) {
         self.filetags.rs().extend(file.mapping());
-        self.files.rs().insert(file.path_str());
-        self.tags.rs().extend(file.iter().map(|tag| tag.as_str()));
+        self.files.rs().insert(file.ident());
+        self.tags.rs().extend(file.iter().map(|tag| tag.ident()));
     }
 
     /// Generate a 'diff' of attrs in the db and fs
-    pub fn file_diff(&self) -> (DiffedStrIds, DiffedStrIds) {
+    pub fn file_diff(&self) -> (DiffedFiles, DiffedFiles) {
         self.files.diff()
     }
 
     /// Generate a 'diff' of tags in the db and fs
-    pub fn tag_diff(&self) -> (DiffedStrIds, DiffedStrIds) {
+    pub fn tag_diff(&self) -> (DiffedTags, DiffedTags) {
         self.tags.diff()
     }
 

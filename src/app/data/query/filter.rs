@@ -85,11 +85,11 @@ impl<'q> Filter for PipeFilter<'q> {
 
         String::from_utf8_lossy(&output.stdout)
             .split("\n")
-            .fold(Vec::new(), |mut acc, path|{
+            .fold(Vec::new(), |_acc, path|{
                 if path.len() > 0 {
-                    acc.push(self.maps.fids().by_alt(path).expect(&format!("unknown file: '{}'", path)));
+                    //acc.push(*self.maps.fids().by_alt(path).expect(&format!("unknown file: '{}'", path)));
                 }
-                acc
+                _acc
             })
     }
 }

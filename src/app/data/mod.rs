@@ -33,7 +33,7 @@ pub mod error {
 
 pub mod api {
     use super::import::*;
-    pub use crate::app::meta::{export::*, action, config::CommandAction};
+    pub use crate::app::meta::{export::*, action, config::CommandAction, command::FieldReport};
     pub use super::{Query, update, query::{self, Pipeline, Forcings, collect}, tag};
 
     /// The database connection is the only
@@ -55,18 +55,18 @@ pub mod api {
         }
 
         /// Enforce the configured database conventions
-        pub fn enforce(&self, convention: &Vec<Convention>, commit: bool) -> Res<()> {
+        pub fn enforce(&self, convention: &Vec<Convention>, commit: bool) -> Res<Vec<FieldReport>> {
+            let mut reports = Vec::new();
             for convention in convention.iter() {
-                convention.enforce(&self, commit)?;
+                reports.push(convention.enforce(&self, commit)?);
             }
-            Ok(())
+            Ok(reports)
         }
 
         /// Run a query and map a single action over all files
-        pub fn query_map(&self, pipeline: Pipeline, action: CommandAction, commit: bool) -> Res<()> {
+        pub fn query_map(&self, pipeline: Pipeline, action: CommandAction, commit: bool) -> Res<Summary> {
             let command = Command::from_command_action(pipeline, &action);
-            command.run(&self, commit)?;
-            Ok(())
+            Ok(command.run(&self, commit)?)
         }
 
         /// Since query results come in different shapes depending
@@ -99,12 +99,22 @@ pub mod api {
 
         /// Return a list of all tag names and ids
         pub fn query_tag_statistics(&self) -> Res<tag::Statistics> {
-            tag::api::generate_tag_rankings(&self.connection)
+            tag::api::query_tag_statistics(&self.connection)
         }
 
         /// Return a list of all tag names and ids
         pub fn query_all_tags(&self) -> Res<Vec<(i64, String)>> {
-            Ok(tags::table.select((tags::id, tags::name)).get_results(self.connection.get())?)
+            tag::api::query_all_tags(&self.connection)
+        }
+
+        /// Return a sorted list of all tag names and ids
+        pub fn query_all_tags_sorted(&self) -> Res<Vec<TCol>> {
+            Ok(tag::api::sort_tags_lexically(tag::api::query_all_tags(&self.connection)?))
+        }
+
+        /// Return a sorted list of all tag names and ids
+        pub fn query_all_tags_mapped(&self) -> Res<HashMap<Tid, String>> {
+            tag::api::query_all_tags_mapped(&self.connection)
         }
 
         /// Forget files by id

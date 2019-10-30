@@ -1,5 +1,5 @@
 use super::{import::*, api};
-use regex::Regex;
+use crate::model::tag;
 use internship::IStr;
 
 /// A tag is just a String with a few invariants.
@@ -19,6 +19,10 @@ impl Tag {
     /// Create a new Tag
     pub fn new(name: &str) -> Res<Self> {
         Ok(Self(IStr::new(api::sanitize(name)?)))
+    }
+
+    pub fn ident<'a>(&'a self) -> tag::Ident<'a> {
+        tag::Ident { name: self.as_str() }
     }
 }
 

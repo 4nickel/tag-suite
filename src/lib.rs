@@ -24,7 +24,7 @@ pub mod expression;
 pub mod model;
 
 pub mod import {
-    pub use super::util::{error::*, profiler};
+    pub use super::util::{self, error::*, profiler};
     pub use std::collections::{HashSet, HashMap};
     pub use std::path::{Path, PathBuf};
 }

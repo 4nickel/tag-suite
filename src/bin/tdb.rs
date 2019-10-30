@@ -1,7 +1,8 @@
-#![feature(box_syntax)]
+#![feature(test, box_syntax)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate xtag;
+extern crate test;
 extern crate env_logger;
 extern crate clap;
 extern crate owning_ref;
@@ -20,12 +21,18 @@ mod defaults {
     pub const HOME_NAME: &'static str = "tag";
     pub const DATABASE_PATH: &'static str = "db.sqlite";
     pub const CONFIG_NAME: &'static str = "config.yaml";
+
+
     //pub const CONFIG_AUTO_NAME: &'static str = "config.auto.yaml";
 
     pub fn config_home() -> String { format!("{}/{}", CONFIG_HOME, HOME_NAME) }
     pub fn config_path(path: &str) -> String { format!("{}/{}", config_home(), path) }
     pub fn data_home() -> String { format!("{}/{}", DATA_HOME, HOME_NAME) }
     pub fn data_path(path: &str) -> String { format!("{}/{}", data_home(), path) }
+
+    #[cfg(test)] pub const TEST_HOME: &'static str = "var/test";
+    #[cfg(test)] pub fn test_home(prefix: &str) -> String { format!("{}/{}", TEST_HOME, prefix) }
+    #[cfg(test)] pub fn test_path(prefix: &str, path: &str) -> String { format!("{}/{}", test_home(prefix), path) }
 }
 
 pub mod error {
@@ -47,10 +54,10 @@ pub enum QueryCommand<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub enum TagCommand {
+pub enum TagCommand<'a> {
     List,
     Clean,
-    Statistics,
+    Statistics(Option<&'a str>),
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +72,7 @@ pub enum Command<'a> {
     Update(Vec<&'a str>, bool),
     Query(QueryCommand<'a>),
     Convention(ConventionCommand),
-    Tag(TagCommand),
+    Tag(TagCommand<'a>),
     Nop,
 }
 
@@ -124,30 +131,47 @@ impl Cli {
     }
 
     /// The 'forget' command
-    pub fn update(&mut self, paths: &Vec<&str>) -> Res<()> {
+    pub fn update(&self, paths: &Vec<&str>) -> Res<()> {
         self.dapi.update(paths)?;
         Ok(())
     }
 
-    pub fn tag_statistics(&self) -> Res<()> {
-        // let mut stats = self.dapi.query_tag_statistics()?;
-        // for ((a, b), c) in stats {
-        //     println!("{}|{} -> {}", a, b, c);
-        // }
+    fn format_tag_statistics(names: (&str, &str), count: usize, percents: (f64, f64)) -> String {
+        format!("{:50} | {:>6} | {:>1.3} : {:>1.3}",
+            format!("{} : {}", names.0, names.1),
+            count,
+            percents.0, percents.1)
+    }
+
+    pub fn tag_statistics(&self, tag: Option<&str>) -> Res<()> {
+        let stats = self.dapi.query_tag_statistics()?;
+        let names = self.dapi.query_all_tags_mapped()?;
+        for (a, b, n) in stats.sorted_pairs_with_names(&names) {
+            let oa = stats.occurrences(a.id);
+            let ob = stats.occurrences(b.id);
+            assert!(oa != 0 && ob != 0, "bug: occurrence count malfunction");
+
+            let pa = n as f64 / oa as f64;
+            let pb = n as f64 / ob as f64;
+            let names = (a.name, b.name);
+            let percents = (pa, pb);
+            if let Some(tag) = tag {
+                if a.name == tag {
+                    let s = Self::format_tag_statistics(names, n, percents);
+                    println!("{}", s);
+                }
+            } else {
+                let s = Self::format_tag_statistics(names, n, percents);
+                println!("{}", s);
+            }
+        }
         Ok(())
     }
 
     pub fn tag_list(&self) -> Res<()> {
-        let mut tags = self.dapi.query_all_tags()?;
-        tags.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
-        let output = tags.into_iter()
-            .fold(String::new(), |mut s, (_, name)| {
-                if !name.starts_with("tdb::") {
-                    s.push_str(&name);
-                    s.push('\n');
-                }
-                s
-            });
+        use xtag::app::data::tag;
+        let tags = self.dapi.query_all_tags_sorted()?;
+        let output = tag::collect_to_string(tags);
         profile!("output", { write!(io::stdout(), "{}", output) })?;
         Ok(())
     }
@@ -182,7 +206,9 @@ impl Cli {
 
     /// The 'map' subcommand
     pub fn query_map(&mut self, pipeline: config::PipelineBuf, action: config::CommandAction, commit: bool) -> Res<()> {
-        self.dapi.query_map(query::Pipeline::from_pipeline(pipeline)?, action, commit)?;
+        let summary = self.dapi.query_map(query::Pipeline::from_pipeline(pipeline)?, action, commit)?;
+        let s = summary.format();
+        println!("{}", s);
         Ok(())
     }
 
@@ -196,7 +222,11 @@ impl Cli {
 
     /// The 'enforce' subcommand
     pub fn enforce(&mut self, commit: bool) -> Res<()> {
-        self.dapi.enforce(&self.conf.conventions, commit)?;
+        let reports = self.dapi.enforce(&self.conf.conventions, commit)?;
+        for report in reports {
+            let r = report.format();
+            println!("{}", r);
+        }
         Ok(())
     }
 }
@@ -219,8 +249,9 @@ fn cli(options: &ArgMatches) -> Res<()> {
                 /* oo = Options::new(options); */
                 if let Some(_options) = options.subcommand_matches("clean") {
                     Command::Tag(TagCommand::Clean)
-                } else if let Some(_options) = options.subcommand_matches("statistics") {
-                    Command::Tag(TagCommand::Statistics)
+                } else if let Some(options) = options.subcommand_matches("statistics") {
+                    ooo = Options::new(options);
+                    Command::Tag(TagCommand::Statistics(ooo.opt("TAG")))
                 } else if let Some(_options) = options.subcommand_matches("list") {
                     Command::Tag(TagCommand::List)
                 } else {
@@ -243,6 +274,8 @@ fn cli(options: &ArgMatches) -> Res<()> {
                         /* oooo = Options::new(options); */ config::CommandAction::Forget
                     } else if let Some(options) = options.subcommand_matches("del") {
                         oooo = Options::new(options); config::CommandAction::Del(oooo.vec("TAGS"))
+                    } else if let Some(options) = options.subcommand_matches("report") {
+                        oooo = Options::new(options); config::CommandAction::Report(oooo.get("MSG"))
                     } else if let Some(options) = options.subcommand_matches("link") {
                         oooo = Options::new(options); config::CommandAction::Link(oooo.vec("DSTS"))
                     } else if let Some(options) = options.subcommand_matches("unlink") {
@@ -286,19 +319,23 @@ fn cli(options: &ArgMatches) -> Res<()> {
             Command::Query(q) => {
                 match q {
                     QueryCommand::Output(pipeline) => {
-                        let pipe = config::PipelineBuf::from_pipeline(&pipeline).expand(cli.config().expansions())?;
+                        let pipe = config::PipelineBuf::from_pipeline(&pipeline)
+                            .expand(cli.config().expansions())?;
                         cli.query(pipe, false)?;
                     }
                     QueryCommand::Map(pipeline, map, commit) => {
-                        let pipe = config::PipelineBuf::from_pipeline(&pipeline).expand(cli.config().expansions())?;
+                        let pipe = config::PipelineBuf::from_pipeline(&pipeline)
+                            .expand(cli.config().expansions())?;
                         cli.query_map(pipe, map, commit)?;
                     }
                     QueryCommand::Count(pipeline) => {
-                        let pipe = config::PipelineBuf::from_pipeline(&pipeline).expand(cli.config().expansions())?;
+                        let pipe = config::PipelineBuf::from_pipeline(&pipeline)
+                            .expand(cli.config().expansions())?;
                         cli.query(pipe, true)?;
                     }
                     QueryCommand::Serialize(pipeline, format) => {
-                        let pipe = config::PipelineBuf::from_pipeline(&pipeline).expand(cli.config().expansions())?;
+                        let pipe = config::PipelineBuf::from_pipeline(&pipeline)
+                            .expand(cli.config().expansions())?;
                         cli.query_serialize(pipe, format)?;
                     }
                 }
@@ -309,8 +346,8 @@ fn cli(options: &ArgMatches) -> Res<()> {
             Command::Tag(TagCommand::List) => {
                 cli.tag_list()?;
             }
-            Command::Tag(TagCommand::Statistics) => {
-                cli.tag_statistics()?;
+            Command::Tag(TagCommand::Statistics(tag)) => {
+                cli.tag_statistics(tag)?;
             }
             Command::Convention(ConventionCommand::Enforce(commit)) => {
                 cli.enforce(commit)?;
@@ -345,7 +382,7 @@ fn main() -> Res<()> {
                 .takes_value(true))
 
             .subcommand(SubCommand::with_name("config")
-                .about("Configuration subcommand"))
+                .about("Configuration subcommand [unimplemented]"))
 
             .subcommand(SubCommand::with_name("convention")
                 .about("Convention subcommand")
@@ -369,7 +406,10 @@ fn main() -> Res<()> {
                 .subcommand(SubCommand::with_name("clean")
                     .about("Clean tags"))
                 .subcommand(SubCommand::with_name("statistics")
-                    .about("Generate tag statistics")))
+                    .about("Generate tag statistics")
+                    .arg(Arg::with_name("TAG")
+                        .help("Show only those statistics concerning TAG")
+                        .takes_value(true))))
 
             .subcommand(SubCommand::with_name("update")
                 .about("Updates the database")
@@ -380,29 +420,6 @@ fn main() -> Res<()> {
                     .takes_value(false))
                 .arg(Arg::with_name("PATH")
                     .help("The paths to update")
-                    .takes_value(true)
-                    .multiple(true)))
-
-            .subcommand(SubCommand::with_name("forget")
-                .about("Queries the database and forgets the results")
-                .arg(Arg::with_name("filter")
-                    .short("f")
-                    .long("filter")
-                    .help("Filter the results using EXPR")
-                    .value_name("EXPR")
-                    .takes_value(true))
-                .arg(Arg::with_name("pipe")
-                    .short("p")
-                    .long("pipe")
-                    .help("Pipe the results through SH")
-                    .value_name("SH")
-                    .takes_value(true))
-                .arg(Arg::with_name("clean")
-                    .short("c")
-                    .long("clean")
-                    .help("Enforce a clean afterwards"))
-                .arg(Arg::with_name("QUERY")
-                    .help("The QUERY to enforce")
                     .takes_value(true)
                     .multiple(true)))
 
@@ -417,7 +434,7 @@ fn main() -> Res<()> {
                 .arg(Arg::with_name("pipe")
                     .short("p")
                     .long("pipe")
-                    .help("Pipe the results through SH")
+                    .help("Pipe the results through a shell command")
                     .value_name("SH")
                     .takes_value(true))
                 .arg(Arg::with_name("QUERY")
@@ -458,6 +475,10 @@ fn main() -> Res<()> {
                             .required(true)
                             .takes_value(true)
                             .multiple(true)))
+                    .subcommand(SubCommand::with_name("report")
+                        .arg(Arg::with_name("MSG")
+                            .help("Report a file")
+                            .takes_value(true)))
                     .subcommand(SubCommand::with_name("link")
                         .arg(Arg::with_name("DSTS")
                             .help("Destination directory/directories")
@@ -530,3 +551,32 @@ fn nanoseconds_to_human_time(ns: i64) -> (i64, i64, i64, i64) {
 }
 
 //}}}
+
+#[cfg(test)]
+pub mod suite {
+
+    use super::*;
+
+    #[bench]
+    fn bench_update_1500_files(b: &mut test::Bencher) {
+        let config = Config {
+            config: defaults::test_path("suite", "config.yaml"),
+            database: defaults::test_path("suite", "db.sqlite"),
+        };
+        b.iter(|| {
+            let cli = Cli::new(&config).unwrap();
+            cli.update(&vec![defaults::test_path("data", "one").as_str()]).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_query_all(b: &mut test::Bencher) {
+        let config = Config {
+            config: defaults::test_path("suite", "config.yaml"),
+            database: defaults::test_path("suite", "db.sqlite"),
+        };
+        b.iter(|| {
+            //let cli = Cli::new(&config).unwrap();
+        });
+    }
+}

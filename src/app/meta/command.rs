@@ -1,8 +1,12 @@
 use std::collections::HashMap;
-use crate::{expression::Expansions, expression::{Expression}};
-use crate::app::{meta::config::CommandAction, data::{DatabaseLayer, query::{Pipeline, Forcings}}};
-use crate::app::meta::Template;
-use super::{import::*, Action, config};
+use crate::{
+    app::{
+        meta::{Template, config::CommandAction},
+        data::{DatabaseLayer, query::{Pipeline, Forcings}}
+    },
+    expression::Expansions, expression::{Expression},
+};
+use super::{import::*, Action, action, config};
 
 /// A configured Command
 #[derive(Debug, Clone)]
@@ -16,6 +20,30 @@ pub struct Command {
 pub struct Convention {
     comment: Option<String>,
     commands: Vec<Command>,
+}
+
+pub struct FieldReport {
+    comment: Option<String>,
+    summaries: Vec<Summary>,
+}
+
+impl FieldReport {
+    pub fn new(convention: &Convention) -> Self {
+        Self {
+            comment: convention.comment.clone(),
+            summaries: Vec::new(),
+        }
+    }
+    pub fn add_summary(&mut self, summary: Summary) {
+        self.summaries.push(summary)
+    }
+    pub fn format(&self) -> String {
+        let mut buffer = String::new();
+        for summary in &self.summaries {
+            buffer.push_str(&summary.format());
+        }
+        buffer
+    }
 }
 
 impl Convention {
@@ -67,14 +95,48 @@ impl Convention {
     }
 
     /// Enforce the Convention on a database interface.
-    pub fn enforce(&self, dapi: &DatabaseLayer, commit: bool) -> Res<()> {
+    pub fn enforce(&self, dapi: &DatabaseLayer, commit: bool) -> Res<FieldReport> {
         if let Some(comment) = &self.comment {
             info!(".. {}", comment);
         }
+        let mut report = FieldReport::new(&self);
         for command in &self.commands {
-            command.run(dapi, commit)?;
+            report.add_summary(command.run(dapi, commit)?);
         }
-        Ok(())
+        Ok(report)
+    }
+}
+
+struct Report<'a> {
+    command: &'a Command,
+    reports: Vec<action::Report<'a>>,
+}
+
+impl<'a> Report<'a> {
+    pub fn new(command: &'a Command) -> Self {
+        Self { command, reports: Vec::new() }
+    }
+    pub fn add_report(&mut self, report: action::Report<'a>) {
+        self.reports.push(report)
+    }
+    pub fn summarize(&self) -> Summary {
+        Summary {
+            actions: self.reports.iter().map(|r| r.summarize()).collect(),
+        }
+    }
+}
+
+pub struct Summary {
+    pub actions: Vec<action::Summary>,
+}
+
+impl Summary {
+    pub fn format(&self) -> String {
+        let mut buffer = String::new();
+        for summary in &self.actions {
+            buffer.push_str(&summary.format());
+        }
+        buffer
     }
 }
 
@@ -93,6 +155,14 @@ impl Command {
             pipeline: Pipeline::from_pipeline(pipeline)?,
             actions: actions,
         })
+    }
+
+    pub fn forcings(&self) -> Forcings {
+        let mut forcings = Forcings::new();
+        for action in &self.actions {
+            forcings = forcings.combine(action.forcings());
+        }
+        forcings
     }
 
     /// Create a new configured Command instance from a single command-action
@@ -116,16 +186,17 @@ impl Command {
     }
 
     /// Run the Command against the a data interface.
-    pub fn run(&self, dapi: &DatabaseLayer, commit: bool) -> Res<()> {
-        let results = dapi.query(&self.pipeline, Forcings::new())?;
+    pub fn run(&self, dapi: &DatabaseLayer, commit: bool) -> Res<Summary> {
+        let results = dapi.query(&self.pipeline, self.forcings())?;
+        let mut report = Report::new(&self);
         for action in &self.actions {
-            let state = action.run(&results, commit)?;
+            let action_report = action.run(&results, commit)?;
             if commit {
-                dapi.forget(&state.forget)?;
-                // TODO: get rid of this collect
-                dapi.update(&state.update.iter().map(|s| s.as_str()).collect())?;
+                dapi.forget(&action_report.forgets())?;
+                dapi.update(&action_report.updates())?;
             }
+            report.add_report(action_report);
         }
-        Ok(())
+        Ok(report.summarize())
     }
 }

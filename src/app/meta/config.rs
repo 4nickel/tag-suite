@@ -100,6 +100,7 @@ pub enum CommandAction<'a> {
     Merge(&'a str, &'a str),
     Link(Vec<&'a str>),
     Unlink(Vec<&'a str>),
+    Report(&'a str),
     Forget,
     Emit,
 }

@@ -60,7 +60,7 @@ pub mod api {
         }
     }
 
-    pub fn unghost(tag: &str) -> Option<&str> {
+    pub fn ghostbuster(tag: &str) -> Option<&str> {
         if !tag.starts_with("tdb::") {
             Some(tag)
         } else {
@@ -90,11 +90,11 @@ pub mod api {
 
     /// Write tag data to file
     pub fn write_with_sep(path: &Path, tags: &HashSet<Tag>, sep: &str) -> Res<()> {
-        if tags.is_empty() {
-            purge(path)
-        } else {
-            Ok(xattr::set(path, TAG_KEY, &encode(tags, sep))?)
+        match encode(tags, sep) {
+            Some(encoded) => { xattr::set(path, TAG_KEY, &encoded)?; },
+            None => { purge(path)?; },
         }
+        Ok(())
     }
 
     /// Write tag data to file
@@ -115,16 +115,20 @@ pub mod api {
     }
 
     /// Format the given tags to a string
-    pub fn format(tags: &HashSet<Tag>, sep: &str) -> String {
+    pub fn format(tags: &HashSet<Tag>, sep: &str) -> Option<String> {
         use std::cmp::Ordering;
         let mut list: Vec<&str> =
             tags.iter()
                 .map(|tag| tag.as_str())
-                .filter(|tag| unghost(tag).is_some())
+                .filter(|tag| ghostbuster(tag).is_some())
                 .filter(|tag| sanitize(tag).is_ok())
                 .collect();
-        list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-        list.join(sep)
+        if list.len() == 0 {
+            None
+        } else {
+            list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+            Some(list.join(sep))
+        }
     }
 
     /// Decode and sanitize the given tags as UTF-8
@@ -139,7 +143,7 @@ pub mod api {
     }
 
     /// Encode the given tags as UTF-8
-    pub fn encode(tags: &HashSet<Tag>, sep: &str) -> Vec<u8> {
-        format(tags, sep).as_bytes().to_vec()
+    pub fn encode(tags: &HashSet<Tag>, sep: &str) -> Option<Vec<u8>> {
+        format(tags, sep).map(|e| e.as_bytes().to_vec())
     }
 }

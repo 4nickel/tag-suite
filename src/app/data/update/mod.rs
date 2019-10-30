@@ -20,9 +20,8 @@ pub mod api {
     use super::import::*;
     use super::export::*;
     use crate::{
-        model::{export::*, file, tag, file_tag},
-        app::{attr::{File as Attributes}, data::query::{self, Ids}},
-        util::file::UnixFileType,
+        model::{export::*, prelude::Ids, file, tag, file_tag},
+        app::{attr::{File as Attributes}, data::query},
     };
 
     fn query_scanned_file_ids(scan: &mut Scan, c: &db::Connection) -> Res<Vec<Fid>> {
@@ -37,9 +36,9 @@ pub mod api {
         Ok(files::table.select(files::id).filter(scanned).get_results(c.get())?)
     }
 
-    fn scan_database_and_filesystem(paths: &Vec<&str>, c: &db::Connection) -> Res<(Vec<Attributes>, query::Columns, query::ManyToMany)> {
+    fn scan_database_and_filesystem(paths: &Vec<&str>, c: &db::Connection) -> Res<(Vec<Attributes>, query::Columns, query::ManyToManyIds)> {
         let mut scan = Scan::scan(paths);
-        profile!("dbms", { c.get().transaction::<_, Error, _>(|| {
+        profile!("query scan", { c.get().transaction::<_, Error, _>(|| {
             let raw: Vec<Ids> =
                 file_tags::table
                     .select(file_tag::IDS)
@@ -53,42 +52,35 @@ pub mod api {
     /// Since not all tags appear on the scanned path
     /// we take special care not to insert duplicate tags
     /// or delete others unneccessarily.
-    fn deduplicate_tags<'u>(diff: &'u Diff, c: &db::Connection) -> Res<(DiffedStrIds<'u>, DiffedStrIds<'u>, HashMap<String, Tid>)> {
+    fn deduplicate_tags<'u>(diff: &'u Diff, c: &db::Connection) -> Res<(DiffedTags<'u>, DiffedTags<'u>, HashMap<String, Tid>)> {
         let (del, ins) = diff.tag_diff();
+        let names =
+            ins.clone().chain(del.clone())
+                .map(|e| *e)
+                .map(|t| t.name);
         let ddup =
             tags::table
                 .select((tags::name, tags::id))
-                .filter(tags::name.eq_any(ins.clone().chain(del.clone()).map(|e| *e)))
+                .filter(tags::name.eq_any(names))
                 .get_results(c.get())?.into_iter()
                 .collect();
         Ok((del, ins, ddup))
-    }
-
-    fn get_file_type(path: &str) -> UnixFileType {
-        use std::fs::File;
-        UnixFileType::from_std(
-            &File::open(path)
-                .expect("FIXME: improve error handling")
-                .metadata()
-                .expect("FIXME: improve error handling")
-                .file_type()
-        )
     }
 
     /// Generate updates and deletes for files using
     /// the diff of filesystem and database
     fn process_file_diff<'u>(diff: &'u Diff<'u>, ins: &mut Ins<'u>, del: &mut Del<'u>) {
         let (fdel, fins) = diff.file_diff();
-        for f in fins { ins.files.push(file::Insert { path: f, kind: get_file_type(f).to_i64() }); }
-        for f in fdel { del.files.push(f); }
+        for f in fins { ins.files.push(file::Insert { path: f.path, kind: util::file::get_file_type(f.path).to_i64() }); }
+        for f in fdel { del.files.push(f.path); }
     }
 
     /// Generate updates and deletes for tags using
     /// the diff of filesystem and database
     fn process_tag_diff<'u>(diff: &'u Diff<'u>, ins: &mut Ins<'u>, del: &mut Del<'u>, c: &db::Connection) -> Res<HashMap<String, Tid>> {
         let (tdel, tins, ddup) = deduplicate_tags(diff, c)?;
-        for t in tins { if !ddup.contains_key(*t) { ins.tags.push(tag::Insert { name: t }); }}
-        for t in tdel { if !ddup.contains_key(*t) { del.tags.push(t); }}
+        for t in tins { if !ddup.contains_key(t.name) { ins.tags.push(tag::Insert { name: t.name }); }}
+        for t in tdel { if !ddup.contains_key(t.name) { del.tags.push(t.name); }}
         Ok(ddup)
     }
 
@@ -99,11 +91,11 @@ pub mod api {
         let (pdel, pins) = diff.filetag_diff();
         for (file, tag) in pins {
             let (f, t) = get(*file, *tag);
-            ins.filetags.push(FileTag { file_id: f, tag_id: t });
+            ins.filetags.push(FileTag { file_id: *f, tag_id: *t });
         }
         for (file, tag) in pdel {
             let (f, t) = get(*file, *tag);
-            del.filetags.push((f, t));
+            del.filetags.push((*f, *t));
         }
     }
 
@@ -144,15 +136,15 @@ pub mod api {
                 profile!("diff", { process_file_diff(&diff, &mut ins, &mut del) });
                 profile!("sql", {
                     fins = process_files(&ins, &del, c)?;
-                    for f in fins.iter() { maps.add_file(f.id, &f.path); }
+                    for f in fins.iter() { maps.add_file(file::Borrow { id: f.id, path: &f.path, kind: util::file::get_file_type(&f.path).to_i64() }); }
                 })
             });
             profile!("tags", {
                 tdup = profile!("diff", { process_tag_diff(&diff, &mut ins, &mut del, c)? });
                 profile!("sql", {
                     tins = process_tags(&ins, &del, c)?;
-                    for t in tdup.iter() { maps.add_tag(*t.1, t.0) }
-                    for t in tins.iter() { maps.add_tag(t.id, &t.name); }
+                    for t in tdup.iter() { maps.add_tag(tag::Borrow { id: *t.1, name: t.0 }); }
+                    for t in tins.iter() { maps.add_tag(tag::Borrow { id: t.id, name: &t.name }); }
                 });
             });
             profile!("filetags", {

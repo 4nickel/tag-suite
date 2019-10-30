@@ -1,5 +1,5 @@
-mod command;
-mod template;
+pub mod command;
+pub mod template;
 pub mod action; // TODO: why pub?
 
 pub mod config;
@@ -11,14 +11,15 @@ pub mod prelude {
 pub mod import {
     pub use super::super::import::*;
     pub use super::prelude::*;
+    pub use crate::model::prelude::*;
 }
 
 pub mod export {
     pub use super::prelude::*;
-    pub use super::command::{Convention, Command};
-    pub use super::template::{Template};
-    pub use super::action::{Action};
-    pub use super::api::{Configuration};
+    pub use super::command::*;
+    pub use super::template::*;
+    pub use super::action::*;
+    pub use super::api::*;
 }
 pub use export::*;
 

@@ -12,13 +12,6 @@ pub use filter::*;
 pub use super::error;
 
 pub mod prelude {
-    pub type Uid = i64;
-    pub type StrId<'a> = &'a str;
-    pub type Fid = Uid;
-    pub type Tid = Uid;
-    pub type Ids = (Fid, Tid);
-    pub type Row = (Fid, String, Tid, String);
-    pub type Col = (Uid, String);
     /// Our built-in Output options
     /// TODO: add custom formatting
     pub enum Output {
@@ -58,6 +51,7 @@ pub mod import {
     pub use super::prelude::*;
     pub use crate::{
         db::export::*,
+        model::prelude::*,
         expression::{Expression as CompiledExpression, Expansions},
     };
 }
@@ -71,8 +65,7 @@ pub use export::*;
 pub mod api {
 
     use super::{import::*};
-    use crate::{dsl, db::wrangle::*, model::{file, tag, file_tag}};
-    use super::prelude::Ids;
+    use crate::{dsl, db::wrangle::*, model::{tag, file_tag, prelude::Ids}};
 
     /// When the user queries all files doing so directly is
     /// more efficient
@@ -136,7 +129,7 @@ pub mod api {
         })})
     }
 
-    fn query_columns<'a, T>(fids: T, tids: T, c: &db::Connection) -> Res<(Vec<Col>, Vec<Col>)>
+    pub fn query_columns<'a, T>(fids: T, tids: T, c: &db::Connection) -> Res<(Vec<FCol>, Vec<TCol>)>
     where
         T: AsInExpression<BigInt> + Iterator<Item=&'a i64> + ExactSizeIterator,
         <T as AsInExpression<BigInt>>::InExpression: QueryFragment<Sqlite>,
@@ -146,14 +139,14 @@ pub mod api {
     {
         let flen = fids.len();
         let tlen = tids.len();
-        let fcol: Vec<Col> = profile!("files", {
+        let fcol: Vec<FCol> = profile!("files", {
             info!("naming {} Files", flen);
             files::table
-                .select(file::IDS)
+                .select((files::id, files::path, files::kind))
                 .filter(files::id.eq_any(fids))
                 .get_results(c.get())?
         });
-        let tcol: Vec<Col> = profile!("tags", {
+        let tcol: Vec<TCol> = profile!("tags", {
             info!("naming {} Tags", tlen);
             tags::table
                 .select(tag::IDS)
@@ -181,7 +174,7 @@ pub mod api {
                 })
         });
         let (fcol, tcol) = query_columns(fids.iter(), tids.iter(), c)?;
-        Ok(Columns { fcol, tcol, map })
+        Ok(Columns::from_cols(fcol, tcol, map))
     }
 
     /// Takes raw data returned by the query dsl and
@@ -189,10 +182,10 @@ pub mod api {
     /// Since we're iterating anyway, we can gerate
     /// the maps that define File-to-Tag associations
     /// as we go, too.
-    pub fn query_associated(map: Vec<Ids>, c: &db::Connection) -> Res<(Columns, ManyToMany)> {
+    pub fn query_associated(map: Vec<Ids>, c: &db::Connection) -> Res<(Columns, ManyToManyIds)> {
         info!("recieved {} Rows..", map.len());
         let (fids, tids, mtom) = profile!("recv", {
-            map.iter().fold((Vec::new(), Vec::new(), ManyToMany::new()),
+            map.iter().fold((Vec::new(), Vec::new(), ManyToManyIds::new()),
                 |(mut fids, mut tids, mut mtom), (fid, tid)| {
                     let (f, t) = mtom.map(*fid, *tid);
                     if f { fids.push(*fid); }
@@ -201,7 +194,7 @@ pub mod api {
                 })
         });
         let (fcol, tcol) = query_columns(fids.iter(), tids.iter(), c)?;
-        Ok((Columns { fcol, tcol, map }, mtom))
+        Ok((Columns::from_cols(fcol, tcol, map), mtom))
     }
 
     /// The core query functionality: builds an aggregate

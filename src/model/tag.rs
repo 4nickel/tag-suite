@@ -17,6 +17,44 @@ pub struct Insert<'a> {
     pub name: &'a str,
 }
 
+pub trait TagExt {
+    fn id(&self) -> Fid;
+    fn name<'a>(&'a self) -> &'a str;
+    fn borrow<'a>(&'a self) -> Borrow<'a> {
+        Borrow {
+            id: self.id(),
+            name: self.name(),
+        }
+    }
+}
+
+impl TagExt for Tag {
+    fn id(&self) -> Tid { self.id }
+    fn name<'a>(&'a self) -> &'a str { self.name.as_str() }
+}
+
+impl TagExt for TCol {
+    fn id(&self) -> Tid { self.0 }
+    fn name<'a>(&'a self) -> &'a str { self.1.as_str() }
+}
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub struct Borrow<'a> {
+    pub id: Tid,
+    pub name: &'a str,
+}
+
+impl<'a> Borrow<'a> {
+    pub fn ident(&self) -> Ident<'a> {
+        Ident { name: self.name }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub struct Ident<'a> {
+    pub name: &'a str,
+}
+
 impl Tag {
 
     /// Insert tags into the database

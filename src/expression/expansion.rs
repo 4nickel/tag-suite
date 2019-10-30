@@ -15,7 +15,6 @@ pub struct Expansions {
 
 /// Check an identifier for validity.
 fn validate_identifier<'a>(id: &'a str) -> bool {
-    use crate::util;
     id.len() > 0 && util::string::check_contents_with(id, |c| {
         c.is_ascii_alphanumeric()
             || (c == '-')
@@ -75,7 +74,6 @@ impl Expansions {
     /// Canonicalize the expansion key for map lookup.
     /// We want to ignore the delimiter and strip whitespace.
     fn canonicalize_identifier<'a>(&self, exp: &'a str) -> Res<&'a str> {
-        use crate::util;
         let (llen, rlen) = (self.delimiter.0.len(), self.delimiter.1.len());
         assert!(exp.len() >= llen + rlen, "bug: expansion capture is broken");
 

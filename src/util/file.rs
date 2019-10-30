@@ -40,3 +40,14 @@ impl UnixFileType {
         else                         { panic!("bug: unsupported file type") }
     }
 }
+
+pub fn get_file_type(path: &str) -> UnixFileType {
+    use std::fs::File;
+    UnixFileType::from_std(
+        &File::open(path)
+            .expect("FIXME: improve error handling")
+            .metadata()
+            .expect("FIXME: improve error handling")
+            .file_type()
+    )
+}

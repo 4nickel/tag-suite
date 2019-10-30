@@ -1,5 +1,5 @@
 use super::{import::*, api, error::{Error as E}, maps::*};
-use crate::{app::{meta::config, data::DatabaseLayer}};
+use crate::{app::{meta::config, data::DatabaseLayer}, model::*};
 
 /// Raw Query Data
 ///
@@ -39,8 +39,8 @@ impl Unassociated {
 }
 
 impl Columnar for Unassociated {
-    fn files(&self) -> &Vec<(Fid, String)> { self.cols.files() }
-    fn tags(&self) -> &Vec<(Tid, String)> { self.cols.tags() }
+    fn files(&self) -> &Vec<FCol> { self.cols.files() }
+    fn tags(&self) -> &Vec<TCol> { self.cols.tags() }
     fn filetags(&self) -> &Vec<Ids> { self.cols.filetags() }
 }
 
@@ -52,7 +52,7 @@ impl Columnar for Unassociated {
 /// Tag-to-Attr ManyToMany.
 pub struct Unmapped {
     pub cols: Columns,
-    pub asso: ManyToMany,
+    pub asso: ManyToManyIds,
 }
 
 impl Unmapped {
@@ -63,8 +63,8 @@ impl Unmapped {
 }
 
 impl Columnar for Unmapped {
-    fn files(&self) -> &Vec<(Fid, String)> { self.cols.files() }
-    fn tags(&self) -> &Vec<(Tid, String)> { self.cols.tags() }
+    fn files(&self) -> &Vec<FCol> { self.cols.files() }
+    fn tags(&self) -> &Vec<TCol> { self.cols.tags() }
     fn filetags(&self) -> &Vec<Ids> { self.cols.filetags() }
 }
 
@@ -215,7 +215,7 @@ impl<'q> Results<'q> {
         }
     }
 
-    pub fn file_iter(&'q self) -> Result<Box<dyn Iterator<Item=(Fid, &'q str)> + 'q>, E> {
+    pub fn file_iter(&'q self) -> Result<Box<dyn Iterator<Item=file::Borrow<'q>> + 'q>, E> {
         match &self {
             Self::Unassociated(inner) => Ok(box inner.file_iter()),
             Self::Unmapped(inner) => Ok(box inner.file_iter()),
@@ -225,7 +225,7 @@ impl<'q> Results<'q> {
         }
     }
 
-    pub fn tag_iter(&'q self) -> Result<Box<dyn Iterator<Item=(Tid, &'q str)> + 'q>, E> {
+    pub fn tag_iter(&'q self) -> Result<Box<dyn Iterator<Item=tag::Borrow<'q>> + 'q>, E> {
         match &self {
             Self::Unassociated(inner) => Ok(box inner.tag_iter()),
             Self::Unmapped(inner) => Ok(box inner.tag_iter()),

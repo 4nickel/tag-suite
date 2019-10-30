@@ -47,7 +47,7 @@ impl Collector<Res<Vec<Fid>>> for FileIds {
         Forcings::new()
     }
     fn collect_results(&self, results: Results) -> Res<Vec<Fid>> {
-        Ok(results.file_iter()?.map(|e| e.0).collect())
+        Ok(results.file_iter()?.map(|f| f.id).collect())
     }
 }
 
@@ -57,7 +57,7 @@ impl Collector<Res<Vec<Tid>>> for TagIds {
         Forcings::new()
     }
     fn collect_results(&self, results: Results) -> Res<Vec<Tid>> {
-        Ok(results.tag_iter()?.map(|e| e.0).collect())
+        Ok(results.tag_iter()?.map(|t| t.id).collect())
     }
 }
 
@@ -88,8 +88,8 @@ impl Collector<Res<String>> for FilePaths {
     }
     fn collect_results(&self, results: Results) -> Res<String> {
         Ok(results.file_iter()?
-            .fold(String::new(), |mut s, (_, file)| {
-                collect!(&mut s, true, String, file);
+            .fold(String::new(), |mut s, f| {
+                collect!(&mut s, true, String, f.path);
                 s
             }))
     }
@@ -102,8 +102,8 @@ impl Collector<Res<String>> for TagNames {
     }
     fn collect_results<'q>(&self, results: Results<'q>) -> Res<String> {
         Ok(results.tag_iter()?
-            .fold(String::new(), |mut s, (_, tag)| {
-                collect!(&mut s, true, String, tag);
+            .fold(String::new(), |mut s, t| {
+                collect!(&mut s, true, String, t.name);
                 s
             }))
     }
@@ -116,8 +116,8 @@ impl Collector<Res<Vec<attr::File>>> for TagFiles {
     fn collect_results<'q>(&self, results: Results<'q>) -> Res<Vec<attr::File>> {
         Ok(results
             .file_iter()?
-            .filter_map(|(_, file)| {
-                match attr::File::open(PathBuf::from(file)) {
+            .filter_map(|f| {
+                match attr::File::open(PathBuf::from(f.path)) {
                     Ok(file) => Some(file),
                     _ => None
                 }
