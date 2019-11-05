@@ -1,10 +1,8 @@
 [package]
-name = "xtag"
+name = "tag-suite"
 version = "0.1.0"
 authors = ["Felix Viernickel <f.viernickel@googlemail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 xattr = "0.2.2"
@@ -25,6 +23,6 @@ md5 = "0.6.1"
 internship = "0.6.0"
 chrono = "0.4.9"
 
-#[profile.release]
-#debug = false
-#lto = true
+[profile.release]
+debug = false
+lto = true

@@ -1,17 +1,17 @@
 #![feature(test, box_syntax)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate failure;
-#[macro_use] extern crate xtag;
+#[macro_use] extern crate tag_suite;
 extern crate test;
 extern crate env_logger;
 extern crate clap;
 extern crate owning_ref;
 
 use clap::{App, Arg, SubCommand, ArgMatches};
-use xtag::{import::*, db::export::*, util::{arg::Options}};
-use xtag::app::data::{DatabaseLayer, query::{self, collect}};
-use xtag::app::meta::{Configuration, config};
-use xtag::util::profiler;
+use tag_suite::{import::*, db::export::*, util::{arg::Options}};
+use tag_suite::app::data::{DatabaseLayer, query::{self, collect}};
+use tag_suite::app::meta::{Configuration, config};
+use tag_suite::util::profiler;
 use std::io::{self, Write};
 use collect::Stringify;
 
@@ -110,7 +110,7 @@ fn hide_spurious_pipe_errors<T>(res: Result<T, std::io::Error>) -> Res<()> {
 impl Cli {
 
     pub fn new(config: &Config) -> Res<Self> {
-        use xtag::app::meta::config::{Config as AppConfig};
+        use tag_suite::app::meta::config::{Config as AppConfig};
         let c = profile!("file", { AppConfig::read(&config.config)? });
         let conf = profile!("conf", { Configuration::configure(c)? });
         let pool = profile!("pool", { db::Connection::new_pool(&config.database, 2)? });
@@ -130,7 +130,7 @@ impl Cli {
         &self.conf
     }
 
-    /// The 'forget' command
+    /// The 'update' command
     pub fn update(&self, paths: &Vec<&str>) -> Res<()> {
         self.dapi.update(paths)?;
         Ok(())
@@ -169,7 +169,7 @@ impl Cli {
     }
 
     pub fn tag_list(&self) -> Res<()> {
-        use xtag::app::data::tag;
+        use tag_suite::app::data::tag;
         let tags = self.dapi.query_all_tags_sorted()?;
         let output = tag::collect_to_string(tags);
         profile!("output", { write!(io::stdout(), "{}", output) })?;

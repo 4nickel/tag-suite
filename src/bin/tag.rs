@@ -2,9 +2,9 @@
 #[macro_use] extern crate log;
 extern crate env_logger;
 extern crate clap;
-extern crate xtag;
+extern crate tag_suite;
 
-pub use xtag::{import::*, app::attr::{api, Tag, File}, util::arg::{Options}};
+pub use tag_suite::{import::*, app::attr::{api, Tag, File}, util::arg::{Options}};
 pub use clap::{App, ArgMatches, Arg, SubCommand};
 
 #[derive(Debug)]

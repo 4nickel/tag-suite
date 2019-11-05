@@ -1,6 +1,7 @@
 /target
 **/*.rs.bk
 /var
+/lib
 tdb
 tag
 .envrc

@@ -1,7 +1,0 @@
-#!/bin/bash
-read w h < <(identify -format '%w %h' "$1")
-if [[ $h -lt $w ]]; then
-    exit 0
-else
-    exit 1
-fi
