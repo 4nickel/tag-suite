@@ -8,15 +8,35 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-latest]
         rust: [nightly]
 
     runs-on: ${{ matrix.os }}
 
     steps:
+
+    - name: Setup Rust
     - uses: hecrj/setup-rust-action@v1
       with:
         rust-version: ${{ matrix.rust }}
+
+    - name: Setup Sqlite
+    - run: |
+        sudo apt-get install libsqlite3 libsqlite3-dev
+
+    - name: Setup Diesel
+    - run: |
+        cargo install diesel_cli --force --no-default-features --features sqlite
+
+    - name: Checkout
     - uses: actions/checkout@master
-    - name: Run tests
-      run: cargo test --verbose
+
+    - name: Run Migrations
+      env:
+        DATABASE_URL: "var/db.sqlite"
+    - run: make db
+
+    - name: Run Tests
+      env:
+        DATABASE_URL: "var/db.sqlite"
+      run: make test

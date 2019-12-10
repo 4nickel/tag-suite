@@ -8,6 +8,8 @@
 PREFIX=${HOME}/.local
 BIN=${PREFIX}/bin
 
+all: db
+
 .PHONY: db
 db:
 	diesel migration run
@@ -37,7 +39,7 @@ release:
 
 .PHONY: test
 test:
-	cargo test
+	cargo test --verbose
 
 .PHONY: bench
 bench:
