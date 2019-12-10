@@ -2,6 +2,6 @@
 **/*.rs.bk
 /var
 /lib
-tdb
-tag
+/tdb
+/tag
 .envrc
