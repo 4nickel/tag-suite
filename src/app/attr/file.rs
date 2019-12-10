@@ -183,46 +183,62 @@ impl File {
 #[cfg(test)]
 mod suite {
     use super::*;
+    use crate::defaults;
+
+    fn open_file(path: &str) -> File {
+        use std::env;
+        match File::open(path.into()) {
+            Ok(file) => file,
+            Err(err) => {
+                let cwd = env::current_dir().unwrap();
+                panic!(format!("unable to open {}/{}: {:?}", cwd.to_str().unwrap(), path, err));
+            }
+        }
+    }
 
     #[test]
     fn check_add() {
-        let mut f = File::open("test/files/a".into()).unwrap();
-        assert_eq!(f.has("foo"), false);
-        assert_eq!(f.has("bar"), false);
-        assert_eq!(f.add("foo").unwrap(), true);
-        assert_eq!(f.add("bar").unwrap(), true);
-        assert_eq!(f.has("foo"), true);
-        assert_eq!(f.has("bar"), true);
+        let path = defaults::test_path("files", "a");
+        let mut file = open_file(&path);
+        assert_eq!(file.has("foo"), false);
+        assert_eq!(file.has("bar"), false);
+        assert_eq!(file.add("foo").unwrap(), true);
+        assert_eq!(file.add("bar").unwrap(), true);
+        assert_eq!(file.has("foo"), true);
+        assert_eq!(file.has("bar"), true);
     }
 
     #[test]
     fn check_del() {
-        let mut f = File::open("test/files/a".into()).unwrap();
-        assert_eq!(f.add("foo").unwrap(), true);
-        assert_eq!(f.has("foo"), true);
-        assert_eq!(f.del("foo"), true);
-        assert_eq!(f.has("foo"), false);
+        let path = defaults::test_path("files", "a");
+        let mut file = open_file(&path);
+        assert_eq!(file.add("foo").unwrap(), true);
+        assert_eq!(file.has("foo"), true);
+        assert_eq!(file.del("foo"), true);
+        assert_eq!(file.has("foo"), false);
     }
 
     #[test]
     fn check_save() {
+        let path = defaults::test_path("files", "a");
         {
-            let mut f = File::open("test/files/a".into()).unwrap();
-            assert_eq!(f.add("foo").unwrap(), true);
-            assert_eq!(f.save().unwrap(), true);
+            let mut file = open_file(&path);
+            assert_eq!(file.add("foo").unwrap(), true);
+            assert_eq!(file.save().unwrap(), true);
         }
         {
-            let mut f = File::open("test/files/a".into()).unwrap();
-            assert_eq!(f.del("foo"), true);
-            assert_eq!(f.save().unwrap(), true);
+            let mut file = open_file(&path);
+            assert_eq!(file.del("foo"), true);
+            assert_eq!(file.save().unwrap(), true);
         }
     }
 
     #[test]
     fn check_api_tag() {
         use super::super::import::*;
-        let f = File::open("test/files/b".into()).unwrap();
-        let api_tag = f.iter().next().unwrap();
+        let path = defaults::test_path("files", "b");
+        let file = open_file(&path);
+        let api_tag = file.iter().next().unwrap();
         assert_eq!(api_tag.as_str(), API_TAG);
     }
 

@@ -7,7 +7,7 @@
 
 PREFIX=${HOME}/.local
 BIN=${PREFIX}/bin
-TEST_FILES="test/files"
+TEST_FILES="$(shell pwd)/test/files"
 
 all: db
 
@@ -53,7 +53,7 @@ bench:
 	cargo bench
 
 .PHONY: clean
-bench:
+clean:
 	rm -rf ${TEST_FILES}/*
 	cargo clean
 
