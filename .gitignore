@@ -1,6 +1,8 @@
 /target
 **/*.rs.bk
 /local
+/test/tag/db.sqlite
+/test/files/
 /lib
 /tdb
 /tag

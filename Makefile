@@ -7,20 +7,17 @@
 
 PREFIX=${HOME}/.local
 BIN=${PREFIX}/bin
+TEST_FILES="test/files"
 
 all: db
 
-.PHONY: skel
-skel:
-	mkdir -p test
-
 .PHONY: db
-db: skel
+db:
 	diesel migration run
 	$(MAKE) schema
 
 .PHONY: db-redo
-db-redo: skel
+db-redo:
 	diesel migration redo
 	$(MAKE) schema
 
@@ -41,13 +38,24 @@ debug:
 release:
 	cargo build --release
 
+.PHONY: test-files
+test-files:
+	touch ${TEST_FILES}/{a,b,c}
+	mkdir -p ${TEST_FILES}/1500
+	for n in $(seq 1 1 1500); do touch ${TEST_FILES}/1500/$n; done
+
 .PHONY: test
-test:
+test: test-files
 	cargo test --verbose
 
 .PHONY: bench
 bench:
 	cargo bench
+
+.PHONY: clean
+bench:
+	rm -rf ${TEST_FILES}/*
+	cargo clean
 
 .PHONY: link
 link:

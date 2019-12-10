@@ -30,7 +30,7 @@ mod defaults {
     pub fn data_home() -> String { format!("{}/{}", DATA_HOME, HOME_NAME) }
     pub fn data_path(path: &str) -> String { format!("{}/{}", data_home(), path) }
 
-    #[cfg(test)] pub const TEST_HOME: &'static str = "var/test";
+    #[cfg(test)] pub const TEST_HOME: &'static str = "test";
     #[cfg(test)] pub fn test_home(prefix: &str) -> String { format!("{}/{}", TEST_HOME, prefix) }
     #[cfg(test)] pub fn test_path(prefix: &str, path: &str) -> String { format!("{}/{}", test_home(prefix), path) }
 }
@@ -560,20 +560,20 @@ pub mod suite {
     #[bench]
     fn bench_update_1500_files(b: &mut test::Bencher) {
         let config = Config {
-            config: defaults::test_path("suite", "config.yaml"),
-            database: defaults::test_path("suite", "db.sqlite"),
+            config: defaults::test_path("tag", "config.yaml"),
+            database: defaults::test_path("tag", "db.sqlite"),
         };
         b.iter(|| {
             let cli = Cli::new(&config).unwrap();
-            cli.update(&vec![defaults::test_path("data", "one").as_str()]).unwrap();
+            cli.update(&vec![defaults::test_path("files", "1500").as_str()]).unwrap();
         });
     }
 
     #[bench]
     fn bench_query_all(b: &mut test::Bencher) {
         let config = Config {
-            config: defaults::test_path("suite", "config.yaml"),
-            database: defaults::test_path("suite", "db.sqlite"),
+            config: defaults::test_path("tag", "config.yaml"),
+            database: defaults::test_path("tag", "db.sqlite"),
         };
         b.iter(|| {
             //let cli = Cli::new(&config).unwrap();
