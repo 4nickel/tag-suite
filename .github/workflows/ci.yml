@@ -37,6 +37,6 @@ jobs:
     - name: Run tests
       env:
         DATABASE_URL: "test/tag/db.sqlite"
-        XDG_CONFIG_HOME: "/home/user/.config"
-        XDG_DATA_HOME: "/home/user/.local/share"
+        XDG_CONFIG_HOME: "/home/runner/work/tag-suite/tag-suite/test/tag"
+        XDG_DATA_HOME: "/home/runner/work/tag-suite/tag-suite/test/tag"
       run: make test

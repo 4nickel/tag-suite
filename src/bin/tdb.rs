@@ -539,6 +539,7 @@ pub mod suite {
     use super::*;
 
     #[bench]
+    #[ignore]
     fn bench_update_1500_files(b: &mut test::Bencher) {
         let config = Config {
             config: defaults::test_path("tag", "config.yaml"),
@@ -551,6 +552,7 @@ pub mod suite {
     }
 
     #[bench]
+    #[ignore]
     fn bench_query_all(b: &mut test::Bencher) {
         let config = Config {
             config: defaults::test_path("tag", "config.yaml"),
