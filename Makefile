@@ -40,8 +40,8 @@ release:
 
 .PHONY: test-files
 test-files:
-	touch ${TEST_FILES}/{a,b,c}
 	mkdir -p ${TEST_FILES}/1500
+	touch ${TEST_FILES}/{a,b,c}
 	for n in $(seq 1 1 1500); do touch ${TEST_FILES}/1500/$n; done
 
 .PHONY: test
