@@ -337,7 +337,7 @@ pub mod suite {
     }
     #[test]
     fn check_parse_action_report()  {
-        let tokens = vec![names::REPORT.to_string()];
+        let tokens = vec![names::REPORT.to_string(), "Stuff".to_string()];
         let action = Action::parse(tokens).unwrap();
         match action { Action::Api(ApiAction::Report(_)) => { }, _ => panic!("wrong action"), }
     }
