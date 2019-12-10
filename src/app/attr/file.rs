@@ -186,7 +186,7 @@ mod suite {
 
     #[test]
     fn check_add() {
-        let mut f = File::open("var/test/attr/a".into()).unwrap();
+        let mut f = File::open("test/files/a".into()).unwrap();
         assert_eq!(f.has("foo"), false);
         assert_eq!(f.has("bar"), false);
         assert_eq!(f.add("foo").unwrap(), true);
@@ -197,7 +197,7 @@ mod suite {
 
     #[test]
     fn check_del() {
-        let mut f = File::open("var/test/attr/a".into()).unwrap();
+        let mut f = File::open("test/files/a".into()).unwrap();
         assert_eq!(f.add("foo").unwrap(), true);
         assert_eq!(f.has("foo"), true);
         assert_eq!(f.del("foo"), true);
@@ -207,12 +207,12 @@ mod suite {
     #[test]
     fn check_save() {
         {
-            let mut f = File::open("var/test/attr/a".into()).unwrap();
+            let mut f = File::open("test/files/a".into()).unwrap();
             assert_eq!(f.add("foo").unwrap(), true);
             assert_eq!(f.save().unwrap(), true);
         }
         {
-            let mut f = File::open("var/test/attr/a".into()).unwrap();
+            let mut f = File::open("test/files/a".into()).unwrap();
             assert_eq!(f.del("foo"), true);
             assert_eq!(f.save().unwrap(), true);
         }
@@ -221,7 +221,7 @@ mod suite {
     #[test]
     fn check_api_tag() {
         use super::super::import::*;
-        let f = File::open("var/test/attr/b".into()).unwrap();
+        let f = File::open("test/files/b".into()).unwrap();
         let api_tag = f.iter().next().unwrap();
         assert_eq!(api_tag.as_str(), API_TAG);
     }

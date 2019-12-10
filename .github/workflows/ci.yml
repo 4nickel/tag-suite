@@ -31,10 +31,12 @@ jobs:
 
     - name: Run migrations
       env:
-        DATABASE_URL: "var/db.sqlite"
+        DATABASE_URL: "test/tag/db.sqlite"
       run: make db
 
     - name: Run tests
       env:
-        DATABASE_URL: "var/db.sqlite"
+        DATABASE_URL: "test/tag/db.sqlite"
+        XDG_CONFIG_HOME: "/home/user/.config"
+        XDG_DATA_HOME: "/home/user/.local/share"
       run: make test

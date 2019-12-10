@@ -1,0 +1,34 @@
+database:
+
+    url: ""
+    commit: false
+    clean: false
+    blobs: false
+
+dictionary:
+
+    home: "/home/user/cyborg"
+    documents: "{{home}}/Documents"
+    music: "{{home}}/Music"
+
+    mp3s: "[path::%.mp3]"
+    m4as: "[path::%.m4a]"
+    music_files: "([kind::file] & ({{mp3s}} | {{m4as}}))"
+
+    readmes: "([path::%/README.md] | [path::%/README])"
+
+templates:
+
+    SetIff:
+        parameters: ["predicate", "tag"]
+        commands:
+            -   query: "({{predicate}}) & ![{{tag}}]"
+                actions: [["add", "{{tag}}"]]
+            -   query: "!({{predicate}}) & [{{tag}}]"
+                actions: [["del", "{{tag}}"]]
+
+conventions:
+    -   comment: "Add 'Funky' to all music files"
+        instances:
+            -   name: "SetIff"
+                args: ["{{music_files}}", "Funky"]

@@ -10,15 +10,17 @@ BIN=${PREFIX}/bin
 
 all: db
 
+.PHONY: skel
+skel:
+	mkdir -p test
+
 .PHONY: db
-db:
-	mkdir -p var
+db: skel
 	diesel migration run
 	$(MAKE) schema
 
 .PHONY: db-redo
-db-redo:
-	mkdir -p var
+db-redo: skel
 	diesel migration redo
 	$(MAKE) schema
 
