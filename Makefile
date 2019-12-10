@@ -38,11 +38,13 @@ debug:
 release:
 	cargo build --release
 
+.PHONY: test-clean
+test-clean:
+	rm -rf ${TEST_FILES}/*
+
 .PHONY: test-files
 test-files:
-	mkdir -p ${TEST_FILES}/1500
-	touch ${TEST_FILES}/{a,b,c}
-	for n in $(seq 1 1 1500); do touch ${TEST_FILES}/1500/$n; done
+	$(shell) ./test/create-files.sh ${TEST_FILES}
 
 .PHONY: test
 test: test-files
@@ -54,7 +56,6 @@ bench:
 
 .PHONY: clean
 clean:
-	rm -rf ${TEST_FILES}/*
 	cargo clean
 
 .PHONY: link
