@@ -12,11 +12,13 @@ all: db
 
 .PHONY: db
 db:
+	mkdir -p var
 	diesel migration run
 	$(MAKE) schema
 
 .PHONY: db-redo
 db-redo:
+	mkdir -p var
 	diesel migration redo
 	$(MAKE) schema
 
