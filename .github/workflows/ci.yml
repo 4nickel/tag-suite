@@ -15,15 +15,15 @@ jobs:
 
     steps:
 
-    - name: Setup rust
+    - name: Set up rust
       uses: hecrj/setup-rust-action@v1
       with:
         rust-version: ${{ matrix.rust }}
 
-    - name: Setup sqlite
-      run: sudo apt-get install libsqlite3 libsqlite3-dev
+    - name: Set up sqlite
+      run: sudo apt-get install sqlite3 libsqlite3-dev
 
-    - name: Setup diesel
+    - name: Set up diesel
       run: cargo install diesel_cli --force --no-default-features --features sqlite
 
     - name: Checkout
