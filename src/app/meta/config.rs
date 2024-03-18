@@ -76,11 +76,11 @@ impl PipelineBuf {
         }
     }
 
-    pub fn as_pipeline<'a>(&'a self) -> Pipeline<'a> {
+    pub fn as_pipeline(&self) -> Pipeline<'_> {
         Pipeline {
-            query: self.query.as_ref().map(|s| s.as_str()),
-            filter: self.filter.as_ref().map(|s| s.as_str()),
-            pipe: self.pipe.as_ref().map(|s| s.as_str()),
+            query: self.query.as_deref(),
+            filter: self.filter.as_deref(),
+            pipe: self.pipe.as_deref(),
         }
     }
 

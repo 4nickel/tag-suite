@@ -37,9 +37,9 @@ pub fn sql_text(text: &str) -> SqlLiteral<Text>
 { sql::<Text>(&format!("'{}'", text)) }
 
 pub fn sql_false() -> SqlLiteral<Bool>
-{ sql::<Bool>(&format!("FALSE")) }
+{ sql::<Bool>("FALSE") }
 
 pub fn sql_true() -> SqlLiteral<Bool>
-{ sql::<Bool>(&format!("TRUE")) }
+{ sql::<Bool>("TRUE") }
 
 // }}}

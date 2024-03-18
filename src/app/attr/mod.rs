@@ -3,13 +3,13 @@ mod tag;
 
 pub mod prelude {
     /// The key under which we store our attribute data
-    pub const TAG_KEY: &'static str = "user.tag.list";
+    pub const TAG_KEY: &str = "user.tag.list";
 
     /// The tag seperator for serialization
-    pub const TAG_SEPERATOR: &'static str = ",";
+    pub const TAG_SEPERATOR: &str = ",";
 
     /// The tag seperator for serialization
-    pub const API_TAG: &'static str = "tdb::api::Entity";
+    pub const API_TAG: &str = "tdb::api::Entity";
 }
 
 pub mod import {
@@ -38,7 +38,7 @@ pub mod api {
     use super::{import::*, export::*, error::{Error as E}};
     use regex::Regex;
 
-    const DELIMITER: (&'static str, &'static str) = ("{{", "}}");
+    const DELIMITER: (&str, &str) = ("{{", "}}");
     lazy_static! {
         /// Regex for (in)validating tags
         static ref INVALID: Regex = {
@@ -52,8 +52,8 @@ pub mod api {
     }
 
     /// Tag sanitization
-    pub fn sanitize<'a>(tag: &'a str) -> Res<&'a str> {
-        if tag.len() == 0 || INVALID.is_match(tag) {
+    pub fn sanitize(tag: &str) -> Res<&str> {
+        if tag.is_empty() || INVALID.is_match(tag) {
             Err(E::InvalidTag { tag: tag.into() }.into())
         } else {
             Ok(tag)
@@ -123,7 +123,7 @@ pub mod api {
                 .filter(|tag| ghostbuster(tag).is_some())
                 .filter(|tag| sanitize(tag).is_ok())
                 .collect();
-        if list.len() == 0 {
+        if list.is_empty() {
             None
         } else {
             list.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
@@ -136,7 +136,7 @@ pub mod api {
         String::from_utf8(tags)?
             .split(sep)
             .try_fold(initial_tags(), |mut set, tag| {
-                let t = Tag::new(tag.into())?;
+                let t = Tag::new(tag)?;
                 if !set.insert(t) { warn!("duplicate tag: '{}'", tag); }
                 Ok(set)
             })

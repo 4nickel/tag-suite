@@ -79,11 +79,11 @@ impl Convention {
         if let Some(config_commands) = config.commands {
             commands.extend(
                 config_commands.into_iter()
-                    .filter_map(|c| Command::configure(c, &expand).ok())
+                    .filter_map(|c| Command::configure(c, expand).ok())
             );
         }
 
-        Ok(Self { comment: config.comment, commands: commands })
+        Ok(Self { comment: config.comment, commands })
     }
 
     /// Create a new Convention from a single command-action.
@@ -99,7 +99,7 @@ impl Convention {
         if let Some(comment) = &self.comment {
             info!(".. {}", comment);
         }
-        let mut report = FieldReport::new(&self);
+        let mut report = FieldReport::new(self);
         for command in &self.commands {
             report.add_summary(command.run(dapi, commit)?);
         }
@@ -153,7 +153,7 @@ impl Command {
                 .collect();
         Ok(Self {
             pipeline: Pipeline::from_pipeline(pipeline)?,
-            actions: actions,
+            actions,
         })
     }
 
@@ -171,24 +171,24 @@ impl Command {
     }
 
     /// Return this Command's query Expression.
-    pub fn query<'a>(&'a self) -> &'a Option<Expression> {
+    pub fn query(&self) -> &Option<Expression> {
         self.pipeline.get_query()
     }
 
     /// Return this Command's filter Expression.
-    pub fn filter<'a>(&'a self) -> &'a Option<Expression> {
+    pub fn filter(&self) -> &Option<Expression> {
         self.pipeline.get_filter()
     }
 
     /// Return this Command's pipe Expression.
-    pub fn pipe<'a>(&'a self) -> &'a Option<String> {
+    pub fn pipe(&self) -> &Option<String> {
         self.pipeline.get_pipe()
     }
 
     /// Run the Command against the a data interface.
     pub fn run(&self, dapi: &DatabaseLayer, commit: bool) -> Res<Summary> {
         let results = dapi.query(&self.pipeline, self.forcings())?;
-        let mut report = Report::new(&self);
+        let mut report = Report::new(self);
         for action in &self.actions {
             let action_report = action.run(&results, commit)?;
             if commit {

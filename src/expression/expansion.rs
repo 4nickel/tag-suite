@@ -2,7 +2,7 @@ use super::{import::*, error::{Error as E}};
 use regex::{Regex, Match};
 
 const RECURSION_LIMIT: usize = 128;
-const EMPTY_WRAPPER: (&'static str, &'static str) = ("", "");
+const EMPTY_WRAPPER: (&str, &str) = ("", "");
 
 #[derive(Debug, Clone)]
 pub struct Expansions {
@@ -14,8 +14,8 @@ pub struct Expansions {
 }
 
 /// Check an identifier for validity.
-fn validate_identifier<'a>(id: &'a str) -> bool {
-    id.len() > 0 && util::string::check_contents_with(id, |c| {
+fn validate_identifier(id: &str) -> bool {
+    !id.is_empty() && util::string::check_contents_with(id, |c| {
         c.is_ascii_alphanumeric()
             || (c == '-')
             || (c == '_')
@@ -59,7 +59,7 @@ impl Expansions {
     pub fn from_map(delimiter: (&'static str, &'static str), map: HashMap<String, String>) -> Self {
         Self {
             regex: generate_regex(delimiter),
-            map: map,
+            map,
             wrapper: EMPTY_WRAPPER,
             delimiter,
             recursion_limit: RECURSION_LIMIT,
@@ -120,7 +120,7 @@ mod suite {
     use super::*;
     use std::fmt::Display;
 
-    const DELIMITER: (&'static str, &'static str) = ("{{", "}}");
+    const DELIMITER: (&str, &str) = ("{{", "}}");
 
     fn no<T>(result: Res<T>)
     where

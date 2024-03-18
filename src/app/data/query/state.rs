@@ -13,7 +13,7 @@ pub struct Raw {
 impl Raw {
     pub fn from_query(dbq: &DatabaseQuery) -> Res<Self> {
         let data = match &dbq.pipeline.query {
-            Some(query) => api::query_dsl(&query, &dbq.api.connection)?,
+            Some(query) => api::query_dsl(query, &dbq.api.connection)?,
             None => api::query_all(&dbq.api.connection)?
         };
         Ok(Self { data })
@@ -119,7 +119,7 @@ impl<'q> Filtered<'q> {
 impl<'q> Viewable<'q> for Filtered<'q> {
     fn maps(&'q self) -> &'q Maps<'q> { self.maps.maps() }
     fn tag_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { self.maps.tag_view() }
-    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { box self.fids.iter().map(|e| *e) }
+    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { Box::new(self.fids.iter().copied()) }
     fn file_count(&self) -> usize { self.maps.fids().len() }
 }
 
@@ -142,7 +142,7 @@ impl<'q> Piped<'q> {
             })?;
         let mut fids =
             PipeFilter::new(filtered.maps.inner(), pipe)
-                .filter(filtered.fids.iter().map(|e| *e));
+                .filter(filtered.fids.iter().copied());
         fids.shrink_to_fit();
         Ok(Self { maps: filtered.maps, fids })
     }
@@ -164,7 +164,7 @@ impl<'q> Piped<'q> {
 impl<'q> Viewable<'q> for Piped<'q> {
     fn maps(&'q self) -> &'q Maps<'q> { self.maps.maps() }
     fn tag_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { self.maps.tag_view() }
-    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { box self.fids.iter().map(|e| *e) }
+    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { Box::new(self.fids.iter().copied()) }
     fn file_count(&self) -> usize { self.maps.fids().len() }
 }
 
@@ -217,35 +217,35 @@ impl<'q> Results<'q> {
 
     pub fn file_iter(&'q self) -> Result<Box<dyn Iterator<Item=file::Borrow<'q>> + 'q>, E> {
         match &self {
-            Self::Unassociated(inner) => Ok(box inner.file_iter()),
-            Self::Unmapped(inner) => Ok(box inner.file_iter()),
-            Self::Mapped(inner) => Ok(box inner.file_iter()),
-            Self::Filtered(inner) => Ok(box inner.file_iter()),
-            Self::Piped(inner) => Ok(box inner.file_iter()),
+            Self::Unassociated(inner) => Ok(Box::new(inner.file_iter())),
+            Self::Unmapped(inner) => Ok(Box::new(inner.file_iter())),
+            Self::Mapped(inner) => Ok(Box::new(inner.file_iter())),
+            Self::Filtered(inner) => Ok(Box::new(inner.file_iter())),
+            Self::Piped(inner) => Ok(Box::new(inner.file_iter())),
         }
     }
 
     pub fn tag_iter(&'q self) -> Result<Box<dyn Iterator<Item=tag::Borrow<'q>> + 'q>, E> {
         match &self {
-            Self::Unassociated(inner) => Ok(box inner.tag_iter()),
-            Self::Unmapped(inner) => Ok(box inner.tag_iter()),
-            Self::Mapped(inner) => Ok(box inner.tag_iter()),
-            _ => Err(E::WrongState { state: self.name().into(), operation: "tag_iter()".into() }.into()),
+            Self::Unassociated(inner) => Ok(Box::new(inner.tag_iter())),
+            Self::Unmapped(inner) => Ok(Box::new(inner.tag_iter())),
+            Self::Mapped(inner) => Ok(Box::new(inner.tag_iter())),
+            _ => Err(E::WrongState { state: self.name().into(), operation: "tag_iter()".into() }),
         }
     }
 
     pub fn file_view_iter(&'q self) -> Result<Box<dyn Iterator<Item=FileView<'q>> + 'q>, E> {
         match &self {
-            Self::Mapped(inner) => Ok(box inner.file_view_iter()),
-            Self::Filtered(inner) => Ok(box inner.file_view_iter()),
-            _ => Err(E::WrongState { state: self.name().into(), operation: "file_view_iter()".into() }.into()),
+            Self::Mapped(inner) => Ok(Box::new(inner.file_view_iter())),
+            Self::Filtered(inner) => Ok(Box::new(inner.file_view_iter())),
+            _ => Err(E::WrongState { state: self.name().into(), operation: "file_view_iter()".into() }),
         }
     }
 
     pub fn tag_view_iter(&'q self) -> Result<Box<dyn Iterator<Item=TagView<'q>> + 'q>, E> {
         match &self {
-            Self::Mapped(inner) => Ok(box inner.tag_view_iter()),
-            _ => Err(E::WrongState { state: self.name().into(), operation: "tag_view_iter()".into() }.into()),
+            Self::Mapped(inner) => Ok(Box::new(inner.tag_view_iter())),
+            _ => Err(E::WrongState { state: self.name().into(), operation: "tag_view_iter()".into() }),
         }
     }
 }
@@ -396,8 +396,8 @@ impl Pipeline {
     /// Get this pipelines minimum forcings.
     pub fn forcings(&self) -> Forcings {
         let mut f = Forcings::new();
-        if let Some(_) = self.filter { f = f.mapped().filtered() }
-        if let Some(_) = self.pipe   { f = f.mapped().piped() }
+        if self.filter.is_some() { f = f.mapped().filtered() }
+        if self.pipe.is_some()   { f = f.mapped().piped() }
         f
     }
 
@@ -421,11 +421,11 @@ impl Pipeline {
 
     /// Process this query with forcings.
     pub fn forced_query<'e, 'q>(&'e self, forcings: Forcings, api: &'e DatabaseLayer) -> Query<'e, 'q> {
-        Query::new(&self, forcings, api)
+        Query::new(self, forcings, api)
     }
 
     /// Process this query without forcings.
     pub fn query<'e, 'q>(&'e self, api: &'e DatabaseLayer) -> Query<'e, 'q> {
-        Query::new(&self, Forcings::new(), api)
+        Query::new(self, Forcings::new(), api)
     }
 }

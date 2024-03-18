@@ -29,8 +29,8 @@ pub struct Insert<'a> {
 pub trait FileExt {
     fn id(&self) -> Fid;
     fn kind(&self) -> Kind;
-    fn path<'a>(&'a self) -> &'a str;
-    fn borrow<'a>(&'a self) -> Borrow<'a> {
+    fn path(&self) -> &str;
+    fn borrow(&self) -> Borrow<'_> {
         Borrow {
             id: self.id(),
             path: self.path(),
@@ -42,13 +42,13 @@ pub trait FileExt {
 impl FileExt for File {
     fn id(&self) -> Fid { self.id }
     fn kind(&self) -> Kind { self.kind }
-    fn path<'a>(&'a self) -> &'a str { self.path.as_str() }
+    fn path(&self) -> &str { self.path.as_str() }
 }
 
 impl FileExt for FCol {
     fn id(&self) -> Fid { self.0 }
     fn kind(&self) -> Kind { self.2 }
-    fn path<'a>(&'a self) -> &'a str { self.1.as_str() }
+    fn path(&self) -> &str { self.1.as_str() }
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]

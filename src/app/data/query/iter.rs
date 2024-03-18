@@ -11,13 +11,13 @@ impl<'q> MapFileIter<'q> {
 
     pub fn new(data: &'q Maps) -> Self {
         Self {
-            data: data,
-            iter: box data.fids().iter().map(|e| e.0)
+            data,
+            iter: Box::new(data.fids().iter().map(|e| e.0))
         }
     }
 
     pub fn from_iter<I: Iterator<Item=Fid> + 'q>(data: &'q Maps, iter: I) -> Self {
-        Self { data: data, iter: box iter }
+        Self { data, iter: Box::new(iter) }
     }
 }
 
@@ -40,13 +40,13 @@ impl<'q> MapTagIter<'q> {
 
     pub fn new(data: &'q Maps) -> Self {
         Self {
-            data: data,
-            iter: box data.tids().iter().map(|e| e.0)
+            data,
+            iter: Box::new(data.tids().iter().map(|e| e.0))
         }
     }
 
     pub fn from_iter<I: Iterator<Item=Fid> + 'q>(data: &'q Maps, iter: I) -> Self {
-        Self { data: data, iter: box iter }
+        Self { data, iter: Box::new(iter) }
     }
 }
 

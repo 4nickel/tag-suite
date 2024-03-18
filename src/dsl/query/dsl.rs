@@ -29,7 +29,7 @@ impl<'a> Dsl<'a> {
     }
 
     pub fn evaluate(&self, ast: &Ast, context: &RefCell<Context<'a>>, input: &()) -> Res<Boolean<'a>> {
-        Ok(self.0.evaluate(ast, context, input)?)
+        self.0.evaluate(ast, context, input)
     }
 
     /// Select file ids WHERE file.kind = ?.
@@ -101,21 +101,21 @@ impl<'a> Dsl<'a> {
 
     /// Logical AND
     fn and<'c>(_context: &'c RefCell<Context<'a>>, a: Boolean<'a>, b: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box a.and(b))
+        Ok(Box::new(a.and(b)))
     }
 
     /// Logical OR
     fn or<'c>(_context: &'c RefCell<Context<'a>>, a: Boolean<'a>, b: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box a.or(b))
+        Ok(Box::new(a.or(b)))
     }
 
     /// Logical NOT
     fn not<'c>(_context: &'c RefCell<Context<'a>>, v: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box diesel::dsl::not(v))
+        Ok(Box::new(diesel::dsl::not(v)))
     }
 
     /// Logical ID
     fn id<'c>(context: &'c RefCell<Context<'a>>, id: (char, &str), _input: &()) -> Res<Boolean<'a>> {
-        Ok(box files::id.eq_any(Self::subselect_fids(id, context.borrow().connection())?))
+        Ok(Box::new(files::id.eq_any(Self::subselect_fids(id, context.borrow().connection())?)))
     }
 }

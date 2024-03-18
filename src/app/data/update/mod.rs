@@ -26,12 +26,12 @@ pub mod api {
 
     fn query_scanned_file_ids(scan: &mut Scan, c: &db::Connection) -> Res<Vec<Fid>> {
         let mut scanned: Boolean =
-            box files::path.eq_any(scan.take_files());
+            Box::new(files::path.eq_any(scan.take_files()));
         for d in scan.take_directories() {
             let mut l = d.clone();
             l.push(std::path::MAIN_SEPARATOR);
             l.push('%');
-            scanned = box scanned.or(files::path.eq(d).or(files::path.like(l)));
+            scanned = Box::new(scanned.or(files::path.eq(d).or(files::path.like(l))));
         }
         Ok(files::table.select(files::id).filter(scanned).get_results(c.get())?)
     }
@@ -55,8 +55,7 @@ pub mod api {
     fn deduplicate_tags<'u>(diff: &'u Diff, c: &db::Connection) -> Res<(DiffedTags<'u>, DiffedTags<'u>, HashMap<String, Tid>)> {
         let (del, ins) = diff.tag_diff();
         let names =
-            ins.clone().chain(del.clone())
-                .map(|e| *e)
+            ins.clone().chain(del.clone()).copied()
                 .map(|t| t.name);
         let ddup =
             tags::table

@@ -139,7 +139,7 @@ pub mod statistics {
 
             let mut items = self.iter_pairs_with_names(names).collect::<Vec<_>>();
             items.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(Ordering::Equal));
-            items.sort_by(|a, b| a.0.name.partial_cmp(&b.0.name).unwrap_or(Ordering::Equal));
+            items.sort_by(|a, b| a.0.name.partial_cmp(b.0.name).unwrap_or(Ordering::Equal));
             items
         }
     }

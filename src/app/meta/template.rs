@@ -14,7 +14,7 @@ impl Template {
     /// Create a new Directory instance
     pub fn configure(name: String, config: config::Template) -> Self {
         Self {
-            name: name,
+            name,
             parameters: config.parameters,
             commands: config.commands,
         }

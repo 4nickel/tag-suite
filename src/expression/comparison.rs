@@ -1,9 +1,9 @@
 use super::{import::*, error::{Error as E}};
 use regex::Regex;
 
-const VARIABLE: &'static str = r"[a-zA-Z0-9\.-_]+";
-const OPERATOR: &'static str = r"<=|>=|==|<|>";
-const NUMBER: &'static str = r"[0-9+]";
+const VARIABLE: &str = r"[a-zA-Z0-9\.-_]+";
+const OPERATOR: &str = r"<=|>=|==|<|>";
+const NUMBER: &str = r"[0-9+]";
 
 lazy_static! {
     static ref COMPARISON: Regex = {
@@ -26,7 +26,7 @@ pub struct Comparison {
 impl Comparison {
 
     /// Parsing these simple comparison expressions is easily done via regex
-    pub fn capture<'c>(expression: &'c str) -> Res<(&'c str, &'c str, &'c str)> {
+    pub fn capture(expression: &str) -> Res<(&str, &str, &str)> {
         let cap = match COMPARISON.captures(expression) {
             Some(cap) => cap,
             None => return Err(E::FailedCapture { expression: expression.into() }.into())

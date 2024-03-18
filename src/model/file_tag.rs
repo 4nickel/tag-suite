@@ -9,7 +9,7 @@ pub const IDS:
 
 // These are some helper types to wrangle the mess
 // of diesels type gibberish.
-pub type SqlType = <(file_tags::file_id) as Expression>::SqlType;
+pub type SqlType = <file_tags::file_id as Expression>::SqlType;
 pub type FilesJoined = JoinOn<Join<file_tags::table, files::table, Inner>, Eq<Nullable<file_tags::file_id>, Nullable<files::id>>>;
 pub type TagsJoined = JoinOn<Join<file_tags::table, tags::table, Inner>, Eq<Nullable<file_tags::tag_id>, Nullable<tags::id>>>;
 pub type FileTagsJoined = JoinOn<Join<FilesJoined, tags::table, Inner>, Eq<Nullable<file_tags::tag_id>, Nullable<tags::id>>>;
@@ -32,7 +32,7 @@ pub struct FileTag {
 impl FileTag {
 
     /// WHERE (f, t) IN (VALUES ( ... ))
-    pub fn with_pairs<'a>(pairs: &'a Vec<(i64, i64)>, keyword: bool) -> SqlLiteral<Bool> {
+    pub fn with_pairs(pairs: &Vec<(i64, i64)>, keyword: bool) -> SqlLiteral<Bool> {
         sql::with_pairs(("`file_tags`.`file_id`", "`file_tags`.`tag_id`"), pairs, keyword)
     }
 

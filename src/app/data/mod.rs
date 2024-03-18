@@ -58,7 +58,7 @@ pub mod api {
         pub fn enforce(&self, convention: &Vec<Convention>, commit: bool) -> Res<Vec<FieldReport>> {
             let mut reports = Vec::new();
             for convention in convention.iter() {
-                reports.push(convention.enforce(&self, commit)?);
+                reports.push(convention.enforce(self, commit)?);
             }
             Ok(reports)
         }
@@ -66,7 +66,7 @@ pub mod api {
         /// Run a query and map a single action over all files
         pub fn query_map(&self, pipeline: Pipeline, action: CommandAction, commit: bool) -> Res<Summary> {
             let command = Command::from_command_action(pipeline, &action);
-            Ok(command.run(&self, commit)?)
+            command.run(self, commit)
         }
 
         /// Since query results come in different shapes depending
@@ -82,7 +82,7 @@ pub mod api {
 
         /// Create a new query, and run it
         pub fn query<'q>(&self, pipeline: &Pipeline, forcings: query::Forcings) -> Res<query::Results<'q>> {
-            pipeline.forced_query(forcings, &self).execute()
+            pipeline.forced_query(forcings, self).execute()
         }
 
         /// Forget any unused tags
@@ -120,7 +120,7 @@ pub mod api {
         /// Forget files by id
         pub fn forget(&self, files: &Vec<Fid>) -> Res<usize> {
             info!("DELETE: {} File(s)", files.len());
-            Ok(File::delete_ids(files, &self.connection)?)
+            File::delete_ids(files, &self.connection)
         }
     }
 }

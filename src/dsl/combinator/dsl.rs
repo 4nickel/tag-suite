@@ -31,7 +31,7 @@ impl<'a> Dsl<'a> {
     }
 
     pub fn evaluate(&self, ast: &Ast, context: &RefCell<()>, input: &()) -> Res<Boolean<'a>> {
-        Ok(self.0.evaluate(ast, context, input)?)
+        self.0.evaluate(ast, context, input)
     }
 
     /// Select file ids
@@ -76,21 +76,21 @@ impl<'a> Dsl<'a> {
 
     /// Logical AND
     fn and(_context: &RefCell<()>, a: Boolean<'a>, b: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box a.and(b))
+        Ok(Box::new(a.and(b)))
     }
 
     /// Logical OR
     fn or(_context: &RefCell<()>, a: Boolean<'a>, b: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box a.or(b))
+        Ok(Box::new(a.or(b)))
     }
 
     /// Logical NOT
     fn not(_context: &RefCell<()>, v: Boolean<'a>) -> Res<Boolean<'a>> {
-        Ok(box diesel::dsl::not(v))
+        Ok(Box::new(diesel::dsl::not(v)))
     }
 
     /// Logical ID
     fn id(_context: &RefCell<()>, id: (char, &str), _input: &()) -> Res<Boolean<'a>> {
-        Ok(box file_tags::file_id.eq_any(Self::subselect_fids(id)?))
+        Ok(Box::new(file_tags::file_id.eq_any(Self::subselect_fids(id)?)))
     }
 }

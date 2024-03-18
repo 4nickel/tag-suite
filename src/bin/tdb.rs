@@ -1,4 +1,4 @@
-#![feature(test, box_syntax)]
+#![feature(test)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate failure;
 #[macro_use] extern crate tag_suite;
@@ -554,7 +554,7 @@ pub mod suite {
     #[bench]
     #[ignore]
     fn bench_query_all(b: &mut test::Bencher) {
-        let config = Config {
+        let _config = Config {
             config: defaults::test_path("tag", "config.yaml"),
             database: defaults::test_path("tag", "db.sqlite"),
         };

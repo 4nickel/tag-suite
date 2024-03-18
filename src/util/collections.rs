@@ -43,11 +43,11 @@ where
     }
     /// Map an int to another int
     pub fn map(&mut self, l: L, r: R) -> (bool, bool) {
-        let lonce = if !self.ltor.contains_key(&l) {
-            self.ltor.insert(l, HashSet::with_capacity(2)); true
+        let lonce = if let std::collections::hash_map::Entry::Vacant(e) = self.ltor.entry(l) {
+            e.insert(HashSet::with_capacity(2)); true
         } else { false };
-        let ronce = if !self.rtol.contains_key(&r) {
-            self.rtol.insert(r, HashSet::with_capacity(2)); true
+        let ronce = if let std::collections::hash_map::Entry::Vacant(e) = self.rtol.entry(r) {
+            e.insert(HashSet::with_capacity(2)); true
         } else { false };
         self.ltor.get_mut(&l).unwrap().insert(r);
         self.rtol.get_mut(&r).unwrap().insert(l);
@@ -95,7 +95,7 @@ where
         }
     }
     /// Return an iterator over the int/str pairs
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item=(L, R)> + 'a {
+    pub fn iter(&self) -> impl Iterator<Item=(L, R)> + '_ {
         self.itos.iter().map(|e| (*e.0, *e.1))
     }
     /// Return the number of contained items
@@ -104,12 +104,12 @@ where
     }
     /// Return the str associated with an int
     pub fn by_uid(&self, id: L) -> Res<R> {
-        self.itos.get(&id).map(|id| *id)
+        self.itos.get(&id).copied()
             .ok_or(E::UnknownId { id: "".into() }.into())
     }
     /// Return the int associated with an str
     pub fn by_alt(&self, id: R) -> Res<L> {
-        self.stoi.get(&id).map(|id| *id)
+        self.stoi.get(&id).copied()
             .ok_or(E::UnknownId { id: "".into() }.into())
     }
     /// Map an int to a str
@@ -169,7 +169,7 @@ where
         }
     }
     /// Return an iterator over the int/str pairs
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item=(LID, RID)> + 'a {
+    pub fn iter(&self) -> impl Iterator<Item=(LID, RID)> + '_ {
         self.itos.iter().map(|e| (*e.0, e.1.as_id()))
     }
     /// Return the number of contained items
@@ -239,7 +239,7 @@ where
     pub fn rs(&mut self) -> &mut HashSet<D> { &mut self.rs }
 
     /// The the two internal sets symmetrically
-    pub fn diff<'d>(&'d self) -> (Diffed<'d, D>, Diffed<'d, D>) {
+    pub fn diff(&self) -> (Diffed<'_, D>, Diffed<'_, D>) {
         (self.ls.difference(&self.rs), self.rs.difference(&self.ls))
     }
 }

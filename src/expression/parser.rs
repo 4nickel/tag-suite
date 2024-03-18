@@ -24,15 +24,15 @@ impl<T: Iterator<Item=Res<Token>>> Parser<T> {
 
     /// Construct a new Parser for a stream of Tokens
     pub fn new(stream: T) -> Self {
-        Self { stream: stream }
+        Self { stream }
     }
 
     /// Parse a binary operation from the BinaryToken
     fn binary(&mut self, operator: BinaryToken, lhs: Ast) -> Res<Ast> {
         let rhs = self.parse()?.ok_or(E::UnexpectedEof { })?;
         match operator {
-            BinaryToken::And => Ok(Ast::Operation(Operator::And(box lhs, box rhs))),
-            BinaryToken::Or => Ok(Ast::Operation(Operator::Or(box lhs, box rhs))),
+            BinaryToken::And => Ok(Ast::Operation(Operator::And(Box::new(lhs), Box::new(rhs)))),
+            BinaryToken::Or => Ok(Ast::Operation(Operator::Or(Box::new(lhs), Box::new(rhs)))),
         }
     }
 
@@ -40,7 +40,7 @@ impl<T: Iterator<Item=Res<Token>>> Parser<T> {
     fn unary(&mut self, operator: UnaryToken) -> Res<Ast> {
         let val = self.parse()?.ok_or(E::UnexpectedEof { })?;
         match operator {
-            UnaryToken::Not => Ok(Ast::Operation(Operator::Not(box val))),
+            UnaryToken::Not => Ok(Ast::Operation(Operator::Not(Box::new(val)))),
         }
     }
 
@@ -78,14 +78,14 @@ mod suite {
     #[test]
     fn check_and() {
         let e = Parser::new(Tokenizer::new("=[...] & =[...]".chars())).parse().unwrap().unwrap();
-        if let Ast::Operation(node) = e { if let Operator::And(_, _) = node { return } }
+        if let Ast::Operation(node) = e { if let Operator::And(_, _) = node { } }
         //panic!()
     }
 
     #[test]
     fn check_or() {
         let e = Parser::new(Tokenizer::new("=[...] | =[...]".chars())).parse().unwrap().unwrap();
-        if let Ast::Operation(node) = e { if let Operator::Or(_, _) = node { return } }
+        if let Ast::Operation(node) = e { if let Operator::Or(_, _) = node { } }
         //panic!()
     }
 

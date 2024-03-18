@@ -27,9 +27,9 @@ impl<'q> collections::HasId<file::Ident<'q>> for &'q file::Borrow<'q>
 impl<'q> collections::HasId<file::Ident<'q>> for file::Borrow<'q>
 { fn as_id(&self) -> file::Ident<'q> { self.ident() } }
 
-const TAGS_LEN: &'static str = "tags.len";
-const PATH_LEN: &'static str = "path.len";
-const FILE_ID: &'static str = "file.id";
+const TAGS_LEN: &str = "tags.len";
+const PATH_LEN: &str = "path.len";
+const FILE_ID: &str = "file.id";
 
 /// A lot of our types have underlying
 /// columns. We implement this trait to reduce
@@ -41,15 +41,15 @@ pub trait Columnar {
     fn filetags(&self) -> &Vec<Ids>;
     /// Iterate the Files column
     fn file_iter<'q>(&'q self) -> Box<dyn Iterator<Item=file::Borrow<'q>> + 'q> {
-        box self.files().iter().map(|row| row.borrow())
+        Box::new(self.files().iter().map(|row| row.borrow()))
     }
     /// Iterate the Tags column
     fn tag_iter<'q>(&'q self) -> Box<dyn Iterator<Item=tag::Borrow<'q>> + 'q> {
-        box self.tags().iter().map(|row| row.borrow())
+        Box::new(self.tags().iter().map(|row| row.borrow()))
     }
     /// Iterate the Maps
     fn filetag_iter<'q>(&'q self) -> Box<dyn Iterator<Item=(Fid, Tid)> + 'q> {
-        box self.filetags().iter().map(|e| (e.0, e.1))
+        Box::new(self.filetags().iter().map(|e| (e.0, e.1)))
     }
     fn file_count(&self) -> usize { self.files().len() }
     fn tag_count(&self) -> usize { self.tags().len() }
@@ -87,18 +87,18 @@ pub trait Viewable<'q> {
     fn tag_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q>;
     fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q>;
     fn file_iter(&'q self) -> Box<dyn Iterator<Item=file::Borrow<'q>> + 'q> {
-        box MapFileIter::from_iter(&self.maps(), self.file_view())
-            .map(|f| f.as_borrow())
+        Box::new(MapFileIter::from_iter(self.maps(), self.file_view())
+            .map(|f| f.as_borrow()))
     }
     fn file_view_iter(&'q self) -> Box<dyn Iterator<Item=FileView<'q>> + 'q> {
-        box MapFileIter::from_iter(&self.maps(), self.file_view())
+        Box::new(MapFileIter::from_iter(self.maps(), self.file_view()))
     }
     fn tag_iter(&'q self) -> Box<dyn Iterator<Item=tag::Borrow<'q>> + 'q> {
-        box MapTagIter::from_iter(&self.maps(), self.tag_view())
-            .map(|t| t.as_borrow())
+        Box::new(MapTagIter::from_iter(self.maps(), self.tag_view())
+            .map(|t| t.as_borrow()))
     }
     fn tag_view_iter(&'q self) -> Box<dyn Iterator<Item=TagView<'q>> + 'q> {
-        box MapTagIter::from_iter(&self.maps(), self.tag_view())
+        Box::new(MapTagIter::from_iter(self.maps(), self.tag_view()))
     }
     fn file_count(&'q self) -> usize {
         self.maps().fids().len()
@@ -133,7 +133,7 @@ impl<'q> Maps<'q> {
         let mut this = Self {
             fids: OneToOneFid::with_capacity(cols.tcol.len()),
             tids: OneToOneTid::with_capacity(cols.fcol.len()),
-            mtom: mtom,
+            mtom,
         };
         cols.file_iter().for_each(|f| { this.add_file(f); });
         cols.tag_iter().for_each(|t| { this.add_tag(t); });
@@ -180,21 +180,21 @@ impl<'q> Maps<'q> {
     pub fn file(&'q self, id: Fid) -> Res<FileView<'q>> {
         let file = self.fids.by_uid(id)?;
         let tids = self.mtom.get_rs(id)?;
-        Ok(FileView { id, maps: &self, path: file.path, kind: file.kind, tids })
+        Ok(FileView { id, maps: self, path: file.path, kind: file.kind, tids })
     }
 
     /// View a tag by id
     pub fn tag(&'q self, id: Tid) -> Res<TagView<'q>> {
         let name = self.tids.by_uid(id)?.name;
         let fids = self.mtom.get_ls(id)?;
-        Ok(TagView { id, maps: &self, name, fids })
+        Ok(TagView { id, maps: self, name, fids })
     }
 }
 
 impl<'q> Viewable<'q> for Maps<'q> {
-    fn maps(&'q self) -> &'q Maps<'q> { &self }
-    fn tag_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { box self.tids.iter().map(|t| t.0) }
-    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { box self.fids.iter().map(|f| f.0) }
+    fn maps(&'q self) -> &'q Maps<'q> { self }
+    fn tag_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { Box::new(self.tids.iter().map(|t| t.0)) }
+    fn file_view(&'q self) -> Box<dyn Iterator<Item=Fid> + 'q> { Box::new(self.fids.iter().map(|f| f.0)) }
 }
 
 use super::iter::MapFileIter;
@@ -214,14 +214,14 @@ pub struct OwnedMaps<'q> {
 impl<'q> OwnedMaps<'q> {
     pub fn new(cols: Columns, mtom: ManyToManyIds) -> Self {
         Self {
-            own: OwningHandle::new_with_fn(box cols, move |cols_p| {
-                unsafe { box Maps::from_cols_and_mtom(&(*cols_p), mtom) }
+            own: OwningHandle::new_with_fn(Box::new(cols), move |cols_p| {
+                unsafe { Box::new(Maps::from_cols_and_mtom(&(*cols_p), mtom)) }
             })
         }
     }
     #[inline(always)] pub fn fids<'a>(&'a self) -> &'a OneToOneFid<'q> { &self.own.fids }
     #[inline(always)] pub fn tids<'a>(&'a self) -> &'a OneToOneTid<'q> { &self.own.tids }
-    #[inline(always)] pub fn mtom<'a>(&'a self) -> &'a ManyToManyIds { &self.own.mtom }
+    #[inline(always)] pub fn mtom(&self) -> &ManyToManyIds { &self.own.mtom }
     #[inline(always)] pub fn inner<'a>(&'a self) -> &'a Maps<'q> { &self.own }
 }
 
@@ -243,7 +243,7 @@ pub struct FileView<'q> {
 impl<'q> FileExt for FileView<'q> {
     fn id(&self) -> Tid { self.id }
     fn kind(&self) -> Kind { self.kind }
-    fn path<'a>(&'a self) -> &'a str { self.path }
+    fn path(&self) -> &str { self.path }
 }
 
 impl<'q> FileView<'q> {
@@ -276,7 +276,7 @@ impl<'q> FileView<'q> {
 
     /// Return an iterator over this files tags
     pub fn iter(&self) -> iter::MapTagIter<'q> {
-        iter::MapTagIter::from_iter(self.maps, self.tids.iter().map(|t| *t))
+        iter::MapTagIter::from_iter(self.maps, self.tids.iter().copied())
     }
 
     /// Turn this view into the simpler Borrow
@@ -310,7 +310,7 @@ pub struct TagView<'q> {
 
 impl<'q> TagExt for TagView<'q> {
     fn id(&self) -> Tid { self.id }
-    fn name<'a>(&'a self) -> &'a str { self.name }
+    fn name(&self) -> &str { self.name }
 }
 
 impl<'q> TagView<'q> {
@@ -336,7 +336,7 @@ impl<'q> TagView<'q> {
     /// Return an iterator over this tags associated files
     #[inline(always)]
     pub fn iter(&self) -> iter::MapFileIter<'q> {
-        iter::MapFileIter::from_iter(self.maps, self.fids.iter().map(|f| *f))
+        iter::MapFileIter::from_iter(self.maps, self.fids.iter().copied())
     }
 
     /// Turn this view into the simpler Borrow

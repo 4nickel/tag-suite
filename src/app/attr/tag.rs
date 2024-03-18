@@ -21,7 +21,7 @@ impl Tag {
         Ok(Self(IStr::new(api::sanitize(name)?)))
     }
 
-    pub fn ident<'a>(&'a self) -> tag::Ident<'a> {
+    pub fn ident(&self) -> tag::Ident<'_> {
         tag::Ident { name: self.as_str() }
     }
 }

@@ -36,7 +36,7 @@ impl Cli {
     pub fn get(file: &Path) -> Res<()> {
         let f = File::open(file.into())?;
         use std::io::{self, Write};
-        match write!(io::stdout(), "{}\n", f.format()) {
+        match writeln!(io::stdout(), "{}", f.format()) {
             Err(e) => {
                 Err(e.into())
             },
@@ -149,32 +149,32 @@ fn main() -> Res<()> {
     };
 
     trace!("running command..");
-    let files = files.iter().map(|f| Path::new(f));
+    let files = files.iter().map(Path::new);
     match command {
         Command::Del(tag) => {
             trace!("deleting '{}' from {} files", tag, files.len());
-            for file in files { err(&file, Cli::del(file, tag)); }
+            for file in files { err(file, Cli::del(file, tag)); }
         }
         Command::Add(tag) => {
             trace!("adding '{}' to {} files", tag, files.len());
-            for file in files { err(&file, Cli::add(file, tag)); }
+            for file in files { err(file, Cli::add(file, tag)); }
         }
         Command::Get => {
             trace!("querying {} files", files.len());
-            for file in files { err(&file, Cli::get(file)); }
+            for file in files { err(file, Cli::get(file)); }
         }
         Command::Merge(src, dst) => {
             trace!("merging '{}' into '{}' in {} files", src, dst, files.len());
-            for file in files { err(&file, Cli::merge(file, src, dst)); }
+            for file in files { err(file, Cli::merge(file, src, dst)); }
         }
         Command::Purge => {
             trace!("purging {} files", files.len());
-            for file in files { err(&file, Cli::purge(file)); }
+            for file in files { err(file, Cli::purge(file)); }
         }
         Command::Nop => { }
     }
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         error!("{} error(s) occurred:", errors.len());
     }
 

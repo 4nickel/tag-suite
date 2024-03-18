@@ -12,14 +12,14 @@ use crate::{
 };
 
 pub mod names {
-    pub const REPORT: &'static str = "report";
-    pub const UNLINK: &'static str = "unlink";
-    pub const LINK: &'static str = "link";
-    pub const ADD: &'static str = "add";
-    pub const DEL: &'static str = "del";
-    pub const MERGE: &'static str = "merge";
-    pub const FORGET: &'static str = "forget";
-    pub const EMIT: &'static str = "emit";
+    pub const REPORT: &str = "report";
+    pub const UNLINK: &str = "unlink";
+    pub const LINK: &str = "link";
+    pub const ADD: &str = "add";
+    pub const DEL: &str = "del";
+    pub const MERGE: &str = "merge";
+    pub const FORGET: &str = "forget";
+    pub const EMIT: &str = "emit";
 }
 
 /// An action performed by the API
@@ -178,7 +178,7 @@ impl Action {
             names::REPORT => { Action::Api(ApiAction::Report(one(&mut tokens)?)) }
             unknown => { return Err(E::UnknownAction { action: unknown.into() }.into()) }
         };
-        if tokens.len() == 0 {
+        if tokens.is_empty() {
             Ok(action)
         } else {
             Err(E::ConfigurationError {
@@ -225,11 +225,11 @@ impl TagAction {
                 attributes.is_dirty()
             },
             TagAction::Del(tags) => {
-                for t in tags { attributes.del(&t); }
+                for t in tags { attributes.del(t); }
                 attributes.is_dirty()
             },
             TagAction::Merge(src, dst) => {
-                attributes.merge(&src, &dst)?
+                attributes.merge(src, dst)?
             }
         };
         if update {
@@ -282,7 +282,7 @@ fn one(v: &mut Vec<String>) -> Res<String> {
 
 /// Take the remaining elements or complain if there are none
 fn one_or_more(v: &mut Vec<String>) -> Res<Vec<String>> {
-    match v.len() == 0 {
+    match v.is_empty() {
         true => Err(E::ConfigurationError {
             message: "expected one or more arguments".into()
         }.into()),

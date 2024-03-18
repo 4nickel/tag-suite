@@ -19,8 +19,8 @@ pub struct Insert<'a> {
 
 pub trait TagExt {
     fn id(&self) -> Fid;
-    fn name<'a>(&'a self) -> &'a str;
-    fn borrow<'a>(&'a self) -> Borrow<'a> {
+    fn name(&self) -> &str;
+    fn borrow(&self) -> Borrow<'_> {
         Borrow {
             id: self.id(),
             name: self.name(),
@@ -30,12 +30,12 @@ pub trait TagExt {
 
 impl TagExt for Tag {
     fn id(&self) -> Tid { self.id }
-    fn name<'a>(&'a self) -> &'a str { self.name.as_str() }
+    fn name(&self) -> &str { self.name.as_str() }
 }
 
 impl TagExt for TCol {
     fn id(&self) -> Tid { self.0 }
-    fn name<'a>(&'a self) -> &'a str { self.1.as_str() }
+    fn name(&self) -> &str { self.1.as_str() }
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]

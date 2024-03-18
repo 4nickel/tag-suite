@@ -76,7 +76,7 @@ impl Collector<Res<usize>> for TagCount {
     fn forcings(&self) -> Forcings {
         Forcings::new()
     }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<usize> {
+    fn collect_results(&self, results: Results<'_>) -> Res<usize> {
         Ok(results.row_count())
     }
 }
@@ -100,7 +100,7 @@ impl Collector<Res<String>> for TagNames {
     fn forcings(&self, ) -> Forcings {
         Forcings::new()
     }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<String> {
+    fn collect_results(&self, results: Results<'_>) -> Res<String> {
         Ok(results.tag_iter()?
             .fold(String::new(), |mut s, t| {
                 collect!(&mut s, true, String, t.name);
@@ -113,7 +113,7 @@ use std::path::PathBuf;
 pub struct TagFiles;
 impl Collector<Res<Vec<attr::File>>> for TagFiles {
     fn forcings(&self, ) -> Forcings { Forcings::new() }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<Vec<attr::File>> {
+    fn collect_results(&self, results: Results<'_>) -> Res<Vec<attr::File>> {
         Ok(results
             .file_iter()?
             .filter_map(|f| {
@@ -129,7 +129,7 @@ impl Collector<Res<Vec<attr::File>>> for TagFiles {
 pub struct SerializePlain;
 impl Collector<Res<String>> for SerializePlain {
     fn forcings(&self) -> Forcings { Forcings::new().mapped() }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<String> {
+    fn collect_results(&self, results: Results<'_>) -> Res<String> {
         let output =
             results.file_view_iter()?
                 .fold(String::new(), |mut buf, file| {
@@ -165,7 +165,7 @@ impl<'q> SerialFile<'q> {
 pub struct SerializeYaml;
 impl Collector<Res<String>> for SerializeYaml {
     fn forcings(&self) -> Forcings { Forcings::new().mapped() }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<String> {
+    fn collect_results(&self, results: Results<'_>) -> Res<String> {
         let serial: Vec<SerialFile> =
             results.file_view_iter()?
                 .map(|f| SerialFile::new(&f))
@@ -177,7 +177,7 @@ impl Collector<Res<String>> for SerializeYaml {
 pub struct SerializeJson;
 impl Collector<Res<String>> for SerializeJson {
     fn forcings(&self) -> Forcings { Forcings::new().mapped() }
-    fn collect_results<'q>(&self, results: Results<'q>) -> Res<String> {
+    fn collect_results(&self, results: Results<'_>) -> Res<String> {
         let serial: Vec<SerialFile> =
             results.file_view_iter()?
                 .map(|f| SerialFile::new(&f))

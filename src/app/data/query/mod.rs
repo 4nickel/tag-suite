@@ -38,7 +38,7 @@ pub mod prelude {
         #[inline(always)] pub fn mapped(self)                   -> Self { Forcings(self.0 | (1u8 << Forcing::Mapped as u8)) }
         #[inline(always)] pub fn filtered(self)                 -> Self { Forcings(self.mapped().0 | (1u8 << Forcing::Filtered as u8)) }
         #[inline(always)] pub fn piped(self)                    -> Self { Forcings(self.mapped().0 | (1u8 << Forcing::Piped as u8)) }
-        #[inline(always)] pub fn has_none(&self)                -> bool { (self.0 == 0u8) }
+        #[inline(always)] pub fn has_none(&self)                -> bool { self.0 == 0u8 }
         #[inline(always)] pub fn has_mapped(&self)              -> bool { (self.0 & (1u8 << Forcing::Mapped as u8)) != 0u8}
         #[inline(always)] pub fn has_filtered(&self)            -> bool { (self.0 & (1u8 << Forcing::Filtered as u8)) != 0u8}
         #[inline(always)] pub fn has_piped(&self)               -> bool { (self.0 & (1u8 << Forcing::Piped as u8)) != 0u8}
@@ -212,7 +212,7 @@ pub mod api {
     /// The core filter functionality: filters the queried
     /// data by matching each file against our custom dsl and
     /// returns a list of collected ids
-    pub fn filter_dsl<'a>(data: &'a Maps, filter: &CompiledExpression) -> Res<Vec<Fid>> {
+    pub fn filter_dsl(data: &Maps, filter: &CompiledExpression) -> Res<Vec<Fid>> {
         let context = RefCell::new(dsl::filter::Context::new());
         let dsl = dsl::filter::Dsl::new();
         data.into_iter()

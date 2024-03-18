@@ -210,7 +210,7 @@ pub mod benches {
         b.iter(|| {
             let mut tokens = Tokenizer::new(s.chars());
             let mut n = 0;
-            while let Some(_) = tokens.next() { n += 1; }
+            for _ in tokens { n += 1; }
             n
         });
     }
@@ -221,7 +221,7 @@ pub mod benches {
         b.iter(|| {
             let mut tokens = Tokenizer::new(s.chars());
             let mut n = 0;
-            while let Some(_) = tokens.next() { n += 1; }
+            for _ in tokens { n += 1; }
             n
         });
     }

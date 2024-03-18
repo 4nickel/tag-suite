@@ -21,7 +21,7 @@ impl Walk {
                     .collect();
             Self {
                 root: PathBuf::from(&root),
-                files: files,
+                files,
             }
         })
     }
@@ -50,17 +50,17 @@ impl Scan {
 
     /// Take the files buffer from this Scan.
     pub fn take_files(&mut self) -> Vec<String> {
-        std::mem::replace(&mut self.files, Vec::new())
+        std::mem::take(&mut self.files)
     }
 
     /// Take the attributes buffer from this Scan.
     pub fn take_attributes(&mut self) -> Vec<attr::File> {
-        std::mem::replace(&mut self.attributes, Vec::new())
+        std::mem::take(&mut self.attributes)
     }
 
     /// Take the directories buffer from this Scan.
     pub fn take_directories(&mut self) -> Vec<String> {
-        std::mem::replace(&mut self.directories, Vec::new())
+        std::mem::take(&mut self.directories)
     }
 
     /// Scan a single file.

@@ -18,10 +18,10 @@ pub struct DslFilter<'q> {
 impl<'q> DslFilter<'q> {
     pub fn new(maps: &'q Maps<'q>, ast: &'q Ast) -> Self {
         Self {
-            maps: maps,
+            maps,
             context: RefCell::new(filter_dsl::Context::new()),
             dsl: filter_dsl::Dsl::new(),
-            ast: ast,
+            ast,
         }
     }
 
@@ -84,9 +84,9 @@ impl<'q> Filter for PipeFilter<'q> {
             .expect("failed to read stdout");
 
         String::from_utf8_lossy(&output.stdout)
-            .split("\n")
+            .split('\n')
             .fold(Vec::new(), |_acc, path|{
-                if path.len() > 0 {
+                if !path.is_empty() {
                     //acc.push(*self.maps.fids().by_alt(path).expect(&format!("unknown file: '{}'", path)));
                 }
                 _acc

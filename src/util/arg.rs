@@ -22,17 +22,14 @@ impl<'o, 'a> Options<'o, 'a> {
     }
 
     pub fn _opt_vec<'f>(args: &'f ArgMatches, key: &str) -> Option<Vec<&'f str>> {
-        match args.values_of(key) {
-            Some(v) => Some(v.collect()),
-            None => None,
-        }
+        args.values_of(key).map(|v| v.collect())
     }
 
     pub fn _opt<'f>(args: &'f ArgMatches, key: &str) -> Option<&'f str> {
         args.value_of(key)
     }
 
-    pub fn _flag<'f>(args: &'f ArgMatches, key: &str) -> bool {
+    pub fn _flag(args: &ArgMatches, key: &str) -> bool {
         args.is_present(key)
     }
 

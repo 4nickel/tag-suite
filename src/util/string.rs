@@ -1,9 +1,9 @@
 /// Normalize the expansion key
-pub fn strip_with<'a, P>(s: &'a str, predicate: P) -> &'a str
+pub fn strip_with<P>(s: &str, predicate: P) -> &str
 where
     P: Fn(char) -> bool
 {
-    if s.len() > 0 {
+    if !s.is_empty() {
         let mut i = 0;
         let mut j = s.len()-1;
         while let Some(c) = s.chars().nth(j) { if !(predicate)(c) { break } else { j -= 1 } }
@@ -24,7 +24,7 @@ pub fn escape_all(s: &str, esc: char) -> String {
             })
 }
 
-pub fn check_contents_with<'a, P>(s: &'a str, predicate: P) -> bool
+pub fn check_contents_with<P>(s: &str, predicate: P) -> bool
 where
     P: Fn(char) -> bool
 {

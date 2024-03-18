@@ -41,10 +41,10 @@ impl<'q> Viewable<'q> for Tagged<'q> {
         self.maps.maps()
     }
     fn tag_view(&'q self) -> Box<dyn Iterator<Item = Fid> + 'q> {
-        box self.tids.iter().map(|e| *e)
+        Box::new(self.tids.iter().copied())
     }
     fn file_view(&'q self) -> Box<dyn Iterator<Item = Fid> + 'q> {
-        box self.fids.iter().map(|e| *e)
+        Box::new(self.fids.iter().copied())
     }
     fn file_count(&self) -> usize {
         self.maps.fids().len()

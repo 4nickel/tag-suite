@@ -12,10 +12,10 @@ impl Expression {
     /// Create a new compiled Expression
     pub fn new(exp: String) -> Res<Self> {
         let expression = format!("({})", exp);
-        let tok = Tokenizer::new(expression.chars().into_iter());
+        let tok = Tokenizer::new(expression.chars());
         let ast = Parser::new(tok.into_iter()).parse()?.ok_or(E::EmptyExpression { })?;
         //trace!("ast: {:?}", ast);
-        Ok(Self { raw: expression, ast: ast, })
+        Ok(Self { raw: expression, ast, })
     }
 
     /// Return this expressions raw string
@@ -30,7 +30,7 @@ impl Expression {
 
     /// Convenience functions for compiling pairs of query and filter expressions
     pub fn compile(q: Option<String>, f: Option<String>) -> Res<(Option<Self>, Option<Self>)> {
-        let compile = |o: Option<String>| o.map(|s| Self::new(s)).transpose() ;
+        let compile = |o: Option<String>| o.map(Self::new).transpose() ;
         Ok(( compile(q)?, compile(f)? ))
     }
 }

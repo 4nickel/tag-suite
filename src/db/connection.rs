@@ -18,7 +18,7 @@ impl<C: diesel::Connection, E> CustomizeConnection<C, E> for ConnectionCustomize
     fn on_acquire(&self, connection: &mut C) -> Result<(), E> {
         // FIXME: I cannot for the life of me figure
         // out how to return a proper error here.
-        diesel::dsl::sql_query(format!("PRAGMA foreign_keys = ON"))
+        diesel::dsl::sql_query("PRAGMA foreign_keys = ON".to_string())
             .execute(connection)
             .expect("pragma error: failed to enable foreign key support");
         Ok(())
@@ -34,7 +34,7 @@ impl Connection {
         let manager = ConnectionManager::<SqliteConnection>::new(database_url);
         Pool::builder()
             .max_size(max_size)
-            .connection_customizer(box ConnectionCustomizer { })
+            .connection_customizer(Box::new(ConnectionCustomizer { }))
             .build(manager)
             .map_err(|e| Error::ConnectionPoolError { message: format!("{:?}", e) }.into())
     }

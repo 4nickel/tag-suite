@@ -159,7 +159,7 @@ impl Frame {
         self.parent
     }
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
     pub fn enter(&mut self) -> DateTime<Utc> {
         self.timer.enter()
@@ -183,7 +183,7 @@ pub struct Analysis {
 }
 
 impl Analysis {
-    pub fn frame<'a>(&'a self, handle: Handle) -> (&'a Frame, &'a AnalyzedFrame) {
+    pub fn frame(&self, handle: Handle) -> (&Frame, &AnalyzedFrame) {
         (&self.frames[handle], &self.analysis[handle])
     }
     pub fn total(&self) -> i64 {

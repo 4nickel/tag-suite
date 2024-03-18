@@ -1,4 +1,4 @@
-#![feature(test, const_fn, type_alias_enum_variants, box_syntax, rustc_private)]
+#![feature(test, type_alias_enum_variants, rustc_private)]
 #![allow(stable_features)]
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate failure;
@@ -30,18 +30,18 @@ pub mod import {
 }
 
 pub mod defaults {
-    pub const CONFIG_HOME: &'static str = env!("XDG_CONFIG_HOME");
-    pub const DATA_HOME: &'static str = env!("XDG_DATA_HOME");
-    pub const HOME_NAME: &'static str = "tag";
-    pub const DATABASE_PATH: &'static str = "db.sqlite";
-    pub const CONFIG_NAME: &'static str = "config.yaml";
+    pub const CONFIG_HOME: &str = env!("XDG_CONFIG_HOME");
+    pub const DATA_HOME: &str = env!("XDG_DATA_HOME");
+    pub const HOME_NAME: &str = "tag";
+    pub const DATABASE_PATH: &str = "db.sqlite";
+    pub const CONFIG_NAME: &str = "config.yaml";
 
     pub fn config_home() -> String { format!("{}/{}", CONFIG_HOME, HOME_NAME) }
     pub fn config_path(path: &str) -> String { format!("{}/{}", config_home(), path) }
     pub fn data_home() -> String { format!("{}/{}", DATA_HOME, HOME_NAME) }
     pub fn data_path(path: &str) -> String { format!("{}/{}", data_home(), path) }
 
-    pub const TEST_HOME: &'static str = "test";
+    pub const TEST_HOME: &str = "test";
     pub fn test_home(prefix: &str) -> String { format!("{}/{}", TEST_HOME, prefix) }
     pub fn test_path(prefix: &str, path: &str) -> String { format!("{}/{}", test_home(prefix), path) }
 }

@@ -78,7 +78,7 @@ impl<'q> Dsl<'q> {
                 Ok(false)
             }
             RESERVED_PATH => {
-                Ok(regex.is_match(&attr.path()))
+                Ok(regex.is_match(attr.path()))
             }
             e => { Err(E::InvalidNamespace{ name: e.into() }.into()) }
         }
@@ -89,7 +89,7 @@ impl<'q> Dsl<'q> {
         let mut context = context.borrow_mut();
         let comparison = context.comparison(exp)?;
         let comparables: Comparables = attr.parameters().into();
-        Ok(comparables.evaluate(comparison)?)
+        comparables.evaluate(comparison)
     }
 
     /// Evaluate the parameter comparison expression

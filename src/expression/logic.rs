@@ -38,10 +38,10 @@ where
     /// Create a new Logic instance
     pub fn new(id: ID, not: UNI, and: BI, or: BI) -> Self {
         Self {
-            id: id,
-            not: not,
-            and: and,
-            or: or,
+            id,
+            not,
+            and,
+            or,
             phantom_ctx: PhantomData,
             phantom_in: PhantomData,
             phantom_out: PhantomData,
@@ -49,23 +49,23 @@ where
     }
 
     /// Evaluate an expression recursively
-    pub fn evaluate<'c, 'i>(&self, ast: &Ast, context: &RefCell<CTX>, input: &'i IN) -> Res<OUT> {
+    pub fn evaluate<'c>(&self, ast: &Ast, context: &RefCell<CTX>, input: &IN) -> Res<OUT> {
         match ast {
             Ast::Operation(operator) => {
                 match operator {
                     Operator::And(lhs, rhs) => {
                         Ok((self.and)(context,
-                            self.evaluate(&lhs, context, input)?,
-                            self.evaluate(&rhs, context, input)?)?)
+                            self.evaluate(lhs, context, input)?,
+                            self.evaluate(rhs, context, input)?)?)
                     }
                     Operator::Or(lhs, rhs) => {
                         Ok((self.or)(context,
-                            self.evaluate(&lhs, context, input)?,
-                            self.evaluate(&rhs, context, input)?)?)
+                            self.evaluate(lhs, context, input)?,
+                            self.evaluate(rhs, context, input)?)?)
                     }
                     Operator::Not(val) => {
                         Ok((self.not)(context,
-                            self.evaluate(&val, context, input)?)?)
+                            self.evaluate(val, context, input)?)?)
                     }
                 }
             }

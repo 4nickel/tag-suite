@@ -17,8 +17,8 @@ impl File {
     /// tag data
     pub fn open(path: PathBuf) -> Res<Self> {
         let tags = api::read(&path)?;
-        assert!(tags.len() > 0, "a file should never have an empty tag-set: {}", path.to_string_lossy());
-        Ok(File { path: path, tags: tags, dirty: false })
+        assert!(!tags.is_empty(), "a file should never have an empty tag-set: {}", path.to_string_lossy());
+        Ok(File { path, tags, dirty: false })
     }
 
     /// Return this files path
@@ -37,7 +37,7 @@ impl File {
     }
 
     /// Return a custom iterator for this files tags
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item=&'a Tag> {
+    pub fn iter(&self) -> impl Iterator<Item=&'_ Tag> {
         self.tags.iter()
     }
 
@@ -47,12 +47,12 @@ impl File {
         self.dirty
     }
 
-    pub fn ident<'a>(&'a self) -> file::Ident<'a> {
+    pub fn ident(&self) -> file::Ident<'_> {
         file::Ident { path: self.path_str(), kind: util::file::get_file_type(self.path_str()).to_i64() }
     }
 
     /// Generate tuples mapping (file -> tag)
-    pub fn mapping<'a>(&'a self) -> Vec<(file::Ident<'a>, tag::Ident<'a>)> {
+    pub fn mapping(&self) -> Vec<(file::Ident<'_>, tag::Ident<'_>)> {
         self.iter().map(|t| { (self.ident(), t.ident()) }).collect()
     }
 
@@ -72,9 +72,9 @@ impl File {
 
     /// Make this files tags match the given set
     pub fn set_tags(&mut self, tags: &HashSet<Tag>) -> bool {
-        self.dirty = self.tags.len() > 0;
+        self.dirty = !self.tags.is_empty();
         self.tags.clear();
-        self.tags.extend(tags.iter().map(|e| e.clone()));
+        self.tags.extend(tags.iter().cloned());
         self.dirty
     }
 
@@ -139,7 +139,7 @@ impl File {
     /// Add a tag to the file
     pub fn add(&mut self, tag: &str) -> Res<bool> {
         // NOTE: potentially save an allocation here
-        if self.tags.insert(Tag::new(tag.into())?) {
+        if self.tags.insert(Tag::new(tag)?) {
             self.dirty = true;
         }
         Ok(self.dirty)
@@ -191,7 +191,7 @@ mod suite {
             Ok(file) => file,
             Err(err) => {
                 let cwd = env::current_dir().unwrap();
-                panic!(format!("unable to open {}/{}: {:?}", cwd.to_str().unwrap(), path, err));
+                panic!("unable to open {}/{}: {:?}", cwd.to_str().unwrap(), path, err);
             }
         }
     }
@@ -200,22 +200,22 @@ mod suite {
     fn check_add() {
         let path = defaults::test_path("files", "a");
         let mut file = open_file(&path);
-        assert_eq!(file.has("foo"), false);
-        assert_eq!(file.has("bar"), false);
-        assert_eq!(file.add("foo").unwrap(), true);
-        assert_eq!(file.add("bar").unwrap(), true);
-        assert_eq!(file.has("foo"), true);
-        assert_eq!(file.has("bar"), true);
+        assert!(!file.has("foo"));
+        assert!(!file.has("bar"));
+        assert!(file.add("foo").unwrap());
+        assert!(file.add("bar").unwrap());
+        assert!(file.has("foo"));
+        assert!(file.has("bar"));
     }
 
     #[test]
     fn check_del() {
         let path = defaults::test_path("files", "a");
         let mut file = open_file(&path);
-        assert_eq!(file.add("foo").unwrap(), true);
-        assert_eq!(file.has("foo"), true);
-        assert_eq!(file.del("foo"), true);
-        assert_eq!(file.has("foo"), false);
+        assert!(file.add("foo").unwrap());
+        assert!(file.has("foo"));
+        assert!(file.del("foo"));
+        assert!(!file.has("foo"));
     }
 
     #[test]
@@ -223,13 +223,13 @@ mod suite {
         let path = defaults::test_path("files", "a");
         {
             let mut file = open_file(&path);
-            assert_eq!(file.add("foo").unwrap(), true);
-            assert_eq!(file.save().unwrap(), true);
+            assert!(file.add("foo").unwrap());
+            assert!(file.save().unwrap());
         }
         {
             let mut file = open_file(&path);
-            assert_eq!(file.del("foo"), true);
-            assert_eq!(file.save().unwrap(), true);
+            assert!(file.del("foo"));
+            assert!(file.save().unwrap());
         }
     }
 
