@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 xattr = "^0.2.2"
 failure = "^0.1.5"
-diesel = { version = "^1.4.6", features = ["sqlite", "r2d2"] }
+diesel = { version = "^2.2.3", features = ["sqlite", "r2d2"] }
 walkdir = "^2"
 lazy_static = "^1.0.0"
 clap = "^2.33.0"
